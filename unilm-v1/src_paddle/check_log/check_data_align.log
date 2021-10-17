@@ -1,0 +1,23 @@
+[2021/10/16 21:20:16] root INFO: length: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: True, value: 0.0
+[2021/10/16 21:20:16] root INFO: dataset_0: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: False, value: 2514.1640625
+[2021/10/16 21:20:16] root INFO: dataset_1: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: False, value: 2434.515625
+[2021/10/16 21:20:16] root INFO: dataset_2: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: False, value: 2637.0234375
+[2021/10/16 21:20:16] root INFO: dataset_3: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: False, value: 1551.890625
+[2021/10/16 21:20:16] root INFO: dataset_4: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: False, value: 2910.96875
+[2021/10/16 21:20:16] root INFO: dataloader_0: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: False, value: 259.9140625
+[2021/10/16 21:20:16] root INFO: dataloader_1: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: False, value: 470.203125
+[2021/10/16 21:20:16] root INFO: dataloader_2: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: False, value: 326.125
+[2021/10/16 21:20:16] root INFO: dataloader_3: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: False, value: 125.0234375
+[2021/10/16 21:20:16] root INFO: dataloader_4: 
+[2021/10/16 21:20:16] root INFO: 	mean diff: check passed: False, value: 122.796875
+[2021/10/16 21:20:16] root INFO: diff check failed
