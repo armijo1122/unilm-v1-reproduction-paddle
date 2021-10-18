@@ -28,12 +28,31 @@ from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 # from nn.data_parallel import DataParallelImbalance
 import seq2seq_loader as seq2seq_loader
 # import torch.distributed as dist
+import paddle.distributed.fleet as fleet
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class DistributedSampler(paddle.io.DistributedBatchSampler):
+    def __init__(self,
+                 dataset,
+                 num_replicas=None,
+                 rank=None,
+                 shuffle=True,
+                 seed=0,
+                 drop_last=False):
+        super().__init__(
+            dataset=dataset,
+            batch_size=1,
+            num_replicas=num_replicas,
+            rank=rank,
+            shuffle=shuffle,
+            drop_last=drop_last)
+
 
 
 def _get_max_epoch_model(output_dir):
@@ -234,12 +253,10 @@ def main():
         args.output_dir, 'opt.json'), 'w'), sort_keys=True, indent=2)
 
     if args.local_rank == -1 or args.no_cuda:
-        device = torch.device(
-            "cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
-        n_gpu = torch.cuda.device_count()
+        device = "gpu" if paddle.device.is_compiled_with_cuda() and not args.no_cuda else "cpu"
+        n_gpu = paddle.device.get_device()
     else:
-        torch.cuda.set_device(args.local_rank)
-        device = torch.device("cuda", args.local_rank)
+        paddle.device.set_device(args.local_rank)
         n_gpu = 1
         # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
         dist.init_process_group(backend='nccl')
@@ -253,11 +270,11 @@ def main():
     args.train_batch_size = int(
         args.train_batch_size / args.gradient_accumulation_steps)
 
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    if n_gpu > 0:
-        torch.cuda.manual_seed_all(args.seed)
+    # random.seed(args.seed)
+    # np.random.seed(args.seed)
+    # torch.manual_seed(args.seed)
+    # if n_gpu > 0:
+    #     torch.cuda.manual_seed_all(args.seed)
 
     if not args.do_train and not args.do_eval:
         raise ValueError(
@@ -291,8 +308,8 @@ def main():
             train_sampler = RandomSampler(train_dataset, replacement=False)
             _batch_size = args.train_batch_size
         else:
-            train_sampler = DistributedSampler(train_dataset)
-            _batch_size = args.train_batch_size // dist.get_world_size()
+            _batch_size = args.train_batch_size // n_gpu
+            train_sampler = DistributedSampler(train_dataset, _batch_size)
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=_batch_size, sampler=train_sampler,
                                                        num_workers=args.num_workers, collate_fn=seq2seq_loader.batch_list_to_batch_tensors, pin_memory=False)
 
@@ -397,7 +414,7 @@ def main():
 
     if recover_step:
         logger.info("***** Recover optimizer: %d *****", recover_step)
-        optim_recover = torch.load(os.path.join(
+        optim_recover = paddle.load(os.path.join(
             args.output_dir, "optim.{0}.bin".format(recover_step)), map_location='cpu')
         if hasattr(optim_recover, 'state_dict'):
             optim_recover = optim_recover.state_dict()
@@ -467,17 +484,17 @@ def main():
                     global_step += 1
 
             # Save a trained model
-            if (args.local_rank == -1 or torch.distributed.get_rank() == 0):
+            if (args.local_rank == -1 or paddle.device.get_device() == 0):
                 logger.info(
                     "** ** * Saving fine-tuned model and optimizer ** ** * ")
                 model_to_save = model.module if hasattr(
                     model, 'module') else model  # Only save the model it-self
                 output_model_file = os.path.join(
                     args.output_dir, "model.{0}.bin".format(i_epoch))
-                torch.save(model_to_save.state_dict(), output_model_file)
+                paddle.save(model_to_save.state_dict(), output_model_file)
                 output_optim_file = os.path.join(
                     args.output_dir, "optim.{0}.bin".format(i_epoch))
-                torch.save(optimizer.state_dict(), output_optim_file)
+                paddle.save(optimizer.state_dict(), output_optim_file)
 
                 logger.info("***** CUDA.empty_cache() *****")
                 torch.cuda.empty_cache()
