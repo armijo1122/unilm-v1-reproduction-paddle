@@ -18,6 +18,14 @@
 
 ## 3. 测试
 
+模型权重文件转换：
+
+bash convert.sh # 先运行convert_pretrained_to_paddle.py
+
+bash convert.sh # 再运行convert_torch_to_paddle.py
+
+说明：以上两步分别生成pytorch_model.pdparams和unilm1-large-cased-paddle.pdparams。原PyTorch模型和转换后的Paddle模型的参数名称列表分别保存在bert-cased-pretrained-cache文件夹下的torch.txt和paddle.txt文件中。
+
 前向传播对齐：
 
 cd bert-cased-pretrained-cache/
@@ -40,7 +48,7 @@ bash align_test_p.sh # paddle加载数据
 
 python check_test_align.py #对齐精度检查
 
-说明：由于原文构建数据集时__getitem__方法采用了choice函数，每次去的数据随机，因此对齐检查时不通过，但复现后的dataset与loader可以正常加载数据。
+说明：由于原文构建数据集时__getitem__方法采用了choice函数，每次取的数据随机，因此对齐检查时不通过，但复现后的dataset与loader可以正常加载数据。
 
 损失函数和优化器对齐：
 
