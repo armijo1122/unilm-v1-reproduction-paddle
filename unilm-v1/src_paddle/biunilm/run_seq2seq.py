@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import sys
 import os
-sys.path.append(os.path.dirname('/lustre/S/fuqiang/unilm/unilm/unilm-v1/src/'))
+sys.path.append(os.path.dirname('/lustre/S/fuqiang/unilm/unilm/unilm-v1/src_paddle/'))
 
 import logging
 import glob
@@ -17,7 +17,7 @@ import random
 from pathlib import Path
 from tqdm import tqdm, trange
 import numpy as np
-import torch
+import paddle
 from paddle.io import RandomSampler
 from paddle.io import DistributedBatchSampler
 
@@ -26,8 +26,9 @@ from pytorch_pretrained_bert.modeling import BertForPreTrainingLossMask
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 
 # from nn.data_parallel import DataParallelImbalance
+from paddle import DataParallel as DataParallelImbalance
 import seq2seq_loader as seq2seq_loader
-# import torch.distributed as dist
+import paddle.distributed as dist
 import paddle.distributed.fleet as fleet
 
 
@@ -37,7 +38,7 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message
 logger = logging.getLogger(__name__)
 
 
-class DistributedSampler(paddle.io.DistributedBatchSampler):
+class DistributedSampler(DistributedBatchSampler):
     def __init__(self,
                  dataset,
                  num_replicas=None,
@@ -52,8 +53,6 @@ class DistributedSampler(paddle.io.DistributedBatchSampler):
             rank=rank,
             shuffle=shuffle,
             drop_last=drop_last)
-
-
 
 def _get_max_epoch_model(output_dir):
     fn_model_list = glob.glob(os.path.join(output_dir, "model.*.bin"))
@@ -84,6 +83,8 @@ def main():
     parser.add_argument("--bert_model", default=None, type=str, required=True,
                         help="Bert pre-trained model selected in the list: bert-base-uncased, "
                              "bert-large-uncased, bert-base-cased, bert-base-multilingual, bert-base-chinese.")
+    parser.add_argument("--vocab", default=None, type=str, required=True,
+                        help="Pretrained vacab")
     parser.add_argument("--config_path", default=None, type=str,
                         help="Bert config file path.")
     parser.add_argument("--output_dir",
@@ -251,15 +252,16 @@ def main():
     os.makedirs(args.log_dir, exist_ok=True)
     json.dump(args.__dict__, open(os.path.join(
         args.output_dir, 'opt.json'), 'w'), sort_keys=True, indent=2)
-
+    print("!!!ERROR",args.local_rank)
     if args.local_rank == -1 or args.no_cuda:
         device = "gpu" if paddle.device.is_compiled_with_cuda() and not args.no_cuda else "cpu"
-        n_gpu = paddle.device.get_device()
-    else:
-        paddle.device.set_device(args.local_rank)
         n_gpu = 1
+    else:
+        # paddle.device.set_device(args.local_rank)
+        paddle.device.set_device("gpu")
+        n_gpu = 4   # CHANGE HERE!!!
         # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
-        dist.init_process_group(backend='nccl')
+        dist.init_parallel_env()
     logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
         device, n_gpu, bool(args.local_rank != -1), args.fp16))
 
@@ -270,11 +272,11 @@ def main():
     args.train_batch_size = int(
         args.train_batch_size / args.gradient_accumulation_steps)
 
-    # random.seed(args.seed)
-    # np.random.seed(args.seed)
-    # torch.manual_seed(args.seed)
-    # if n_gpu > 0:
-    #     torch.cuda.manual_seed_all(args.seed)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    paddle.seed(args.seed)
+    if n_gpu > 0:
+        paddle.seed(args.seed)
 
     if not args.do_train and not args.do_eval:
         raise ValueError(
@@ -284,7 +286,7 @@ def main():
         # Make sure only the first process in distributed training will download model & vocab
         dist.barrier()
     tokenizer = BertTokenizer.from_pretrained(
-        args.bert_model, do_lower_case=args.do_lower_case)
+        args.vocab, do_lower_case=args.do_lower_case)
     if args.max_position_embeddings:
         tokenizer.max_len = args.max_position_embeddings
     data_tokenizer = WhitespaceTokenizer() if args.tokenized_input else tokenizer
@@ -310,8 +312,9 @@ def main():
         else:
             _batch_size = args.train_batch_size // n_gpu
             train_sampler = DistributedSampler(train_dataset, _batch_size)
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=_batch_size, sampler=train_sampler,
-                                                       num_workers=args.num_workers, collate_fn=seq2seq_loader.batch_list_to_batch_tensors, pin_memory=False)
+        train_sampler = paddle.io.BatchSampler(sampler = train_sampler, batch_size = _batch_size)
+        train_dataloader = paddle.io.DataLoader(train_dataset, batch_sampler = train_sampler,
+                                                       num_workers=args.num_workers, collate_fn=seq2seq_loader.batch_list_to_batch_tensors, use_shared_memory=True)
 
     # note: args.train_batch_size has been changed to (/= args.gradient_accumulation_steps)
     # t_total = int(math.ceil(len(train_dataset.ex_list) / args.train_batch_size)
@@ -344,16 +347,16 @@ def main():
     else:
         if recover_step:
             logger.info("***** Recover model: %d *****", recover_step)
-            model_recover = torch.load(os.path.join(
-                args.output_dir, "model.{0}.bin".format(recover_step)), map_location='cpu')
+            model_recover = paddle.load(os.path.join(
+                args.output_dir, "model.{0}.pdparams".format(recover_step)), map_location='cpu')
             # recover_step == number of epochs
             global_step = math.floor(
                 recover_step * t_total / args.num_train_epochs)
         elif args.model_recover_path:
             logger.info("***** Recover model: %s *****",
                         args.model_recover_path)
-            model_recover = torch.load(
-                args.model_recover_path, map_location='cpu')
+            model_recover = paddle.load(
+                args.model_recover_path)
             global_step = 0
         model = BertForPreTrainingLossMask.from_pretrained(
             args.bert_model, state_dict=model_recover, num_labels=cls_num_labels, num_rel=0, type_vocab_size=type_vocab_size, config_path=args.config_path, task_idx=3, num_sentlvl_labels=num_sentlvl_labels, max_position_embeddings=args.max_position_embeddings, label_smoothing=args.label_smoothing, fp32_embedding=args.fp32_embedding, relax_projection=relax_projection, new_pos_ids=args.new_pos_ids, ffn_type=args.ffn_type, hidden_dropout_prob=args.hidden_dropout_prob, attention_probs_dropout_prob=args.attention_probs_dropout_prob, num_qkv=args.num_qkv, seg_emb=args.seg_emb)
@@ -361,15 +364,15 @@ def main():
         dist.barrier()
 
     if args.fp16:
-        model.half()
+        # model.half()
         if args.fp32_embedding:
             model.bert.embeddings.word_embeddings.float()
             model.bert.embeddings.position_embeddings.float()
             model.bert.embeddings.token_type_embeddings.float()
-    model.to(device)
+    # model.to(device)
     if args.local_rank != -1:
         try:
-            from torch.nn.parallel import DistributedDataParallel as DDP
+            from paddle.nn.parallel import DistributedDataParallel as DDP
         except ImportError:
             raise ImportError("DistributedDataParallel")
         model = DDP(model, device_ids=[
@@ -398,8 +401,8 @@ def main():
 
         optimizer = FusedAdam(optimizer_grouped_parameters,
                               lr=args.learning_rate,
-                              bias_correction=False,
-                              max_grad_norm=1.0)
+                              bias_correction=False)
+                            #   max_grad_norm=1.0)
         if args.loss_scale == 0:
             optimizer = FP16_Optimizer_State(
                 optimizer, dynamic_loss_scale=True)
@@ -407,8 +410,9 @@ def main():
             optimizer = FP16_Optimizer_State(
                 optimizer, static_loss_scale=args.loss_scale)
     else:
-        optimizer = BertAdam(optimizer_grouped_parameters,
-                             lr=args.learning_rate,
+        optimizer = BertAdam(parameters=optimizer_grouped_parameters[0]["params"],
+                             weight_decay=optimizer_grouped_parameters[0]["weight_decay"],
+                             learning_rate=args.learning_rate,
                              warmup=args.warmup_proportion,
                              t_total=t_total)
 
@@ -424,7 +428,7 @@ def main():
             optimizer.dynamic_loss_scale = True
 
     logger.info("***** CUDA.empty_cache() *****")
-    torch.cuda.empty_cache()
+    # torch.cuda.empty_cache()
 
     if args.do_train:
         logger.info("***** Running training *****")
@@ -443,7 +447,7 @@ def main():
                             disable=args.local_rank not in (-1, 0))
             for step, batch in enumerate(iter_bar):
                 batch = [
-                    t.to(device) if t is not None else None for t in batch]
+                    t if t is not None else None for t in batch]
                 if args.has_sentence_oracle:
                     input_ids, segment_ids, input_mask, mask_qkv, lm_label_ids, masked_pos, masked_weights, is_next, task_idx, oracle_pos, oracle_weights, oracle_labels = batch
                 else:
@@ -490,15 +494,15 @@ def main():
                 model_to_save = model.module if hasattr(
                     model, 'module') else model  # Only save the model it-self
                 output_model_file = os.path.join(
-                    args.output_dir, "model.{0}.bin".format(i_epoch))
+                    args.output_dir, "model.{0}.pdparams".format(i_epoch))
                 paddle.save(model_to_save.state_dict(), output_model_file)
                 output_optim_file = os.path.join(
-                    args.output_dir, "optim.{0}.bin".format(i_epoch))
+                    args.output_dir, "optim.{0}.pdparams".format(i_epoch))
                 paddle.save(optimizer.state_dict(), output_optim_file)
 
                 logger.info("***** CUDA.empty_cache() *****")
-                torch.cuda.empty_cache()
+                # torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":
-    main()
+    paddle.distributed.spawn(main, nprocs=4)

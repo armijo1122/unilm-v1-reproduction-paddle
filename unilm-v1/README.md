@@ -2,72 +2,21 @@
 
 ## 1. 文件组织方式说明
 
-"src/"文件夹中存放原论文的PyTorch源代码，详见https://github.com/microsoft/unilm
+"src/"文件夹下存放的是原文pytorch代码，详见：https://github.com/microsoft/unilm
 
-"src_paddle/"文件夹中存放Paddle复现原文后的源代码，在该文件夹的子文件夹中，check_log文件夹下存放的是对齐测试的log文件，pytorch_pretrained_bert文件夹下存放的是Paddle实现的模型代码。torch_to_paddle_api文件夹下存放了部分PyTorch api的Paddle复现版本。
+"src_paddle/"文件夹下存放的是复现后的Paddle代码，该文件夹下的"check_log"文件夹下存储了几个检查点的log文件，"torch_to_paddle_api/"文件夹下实现了个别pytorch api的Paddle重新实现
 
-"data_align/"文件夹主要用于数据加载部分的对齐测试
+"bert-cased-pretrained-cache/"文件夹下是预训练模型转换的代码，其中convert_pretrained_to_paddle.py是将预训练模型pytorch_model.bin转换成Paddle模型，convert_torch_to_paddle.py是将unilm1-large-cased.bin转换成对应的Paddle权重文件，转换后得到的pyorch_model.pdparams和unilm1-large-cased.bin下载链接为：
 
-"bert-cased-pretrained-cache/"文件夹用于前向对齐和损失函数对齐等步骤。
+"data_align/"文件夹下存放的是验证与测试数据集对齐时使用的文件
 
-## 2. 转换后的模型文件和词汇表下载链接
+## 2. 测试
 
-链接：https://pan.baidu.com/s/143Lb12BS_36ztjXTywBZJg 
+前向模型对齐：将下载好的权重文件放到"bert-cased-pretrained-cache"目录下，依次运行forwardt.sh，forwardp.sh分别进行PyTorch和Paddle的前向传播，然后运行check_forward.py检查对齐误差。
 
-提取码：n0it
+验证集，测试集对齐：读取数据集中的test.src和test.tgt文件，PyTorch读取方式详见data_align/valid_test_align.py，Paddle读取方式详见data_align/valid_test_align.py。由于数据集构建时采用的__getitem__方法采用了random.choice()取数据，因此最后运行data_align/check_test_align.py时显示没有对齐，但可以正常取数据。
 
-## 3. 测试
+损失函数对齐：测试文件与前向传播时相同，只是输入有所变化，仍然是执行forwardt.sh和forwardp.sh,只是此时将forward部分代码注释掉了。检查时执行check_forward.py即可。
 
-模型权重文件转换：
-
-bash convert.sh # 先运行convert_pretrained_to_paddle.py
-
-bash convert.sh # 再运行convert_torch_to_paddle.py
-
-说明：以上两步分别生成pytorch_model.pdparams和unilm1-large-cased-paddle.pdparams。原PyTorch模型和转换后的Paddle模型的参数名称列表分别保存在bert-cased-pretrained-cache文件夹下的torch.txt和paddle.txt文件中。
-
-前向传播对齐：
-
-cd bert-cased-pretrained-cache/
-
-bash forwardt.sh # pytorch前向传播
-
-bash forwardp.sh # paddle前向传播
-
-python check_forward.py # 对齐精度检查
-
-说明：由于原论文提供的权重文件数据类型为fp16，因此前向传播对齐误差大概在1e-4量级。
-
-验证集和测试集对齐：
-
-cd data_align/
-
-bash align_test.sh # pytorch加载数据
-
-bash align_test_p.sh # paddle加载数据
-
-python check_test_align.py #对齐精度检查
-
-说明：由于原文构建数据集时__getitem__方法采用了choice函数，每次取的数据随机，因此对齐检查时不通过，但复现后的dataset与loader可以正常加载数据。
-
-损失函数和优化器对齐：
-
-cd bert-cased-pretrained-cache/
-
-bash forwardt.sh # pytorch前向传播计算损失
-
-bash forwardp.sh # paddle前向传播计算损失
-
-python check_forward.py # 对齐精度检查
-
-说明：这一步操作采用的脚本与前向对齐相同，只是模型输入不同，优化器对齐代码已经实现，但暂时还未与最后一步进行联合调试。
-
-
-
-
-
-
-
-
-
+优化器对齐：详见src_paddle/pytorch_pretrained_bert/optimization.py与optimization_fq16.py，目前还没来得及联合最后一步进行测试
 

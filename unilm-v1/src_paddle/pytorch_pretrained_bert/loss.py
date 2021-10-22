@@ -27,10 +27,10 @@ class LabelSmoothingLoss(nn.Layer):
         assert tgt_vocab_size > 0
 
         smoothing_value = label_smoothing / (tgt_vocab_size - 2)
-        one_hot = paddle.full((tgt_vocab_size,), smoothing_value)
-        one_hot[self.ignore_index] = 0
+        self.one_hot = paddle.full((tgt_vocab_size, 1), smoothing_value)
+        self.one_hot[self.ignore_index] = 0
         self.linear = paddle.nn.Linear(10, 3)
-        self.linear.register_buffer('one_hot', one_hot.unsqueeze(0))
+        self.linear.register_buffer('one_hot', self.one_hot.unsqueeze(0))
         self.confidence = 1.0 - label_smoothing
         self.tgt_vocab_size = tgt_vocab_size
 
@@ -44,8 +44,8 @@ class LabelSmoothingLoss(nn.Layer):
         output = output.reshape([-1, self.tgt_vocab_size])
         target = target.reshape([-1])
         model_prob = paddle.fluid.layers.expand(self.one_hot, (target.shape[0], 1))
-        model_prob = gather(self.confidence, 1, target.unsqueeze(1))
-        scatter_add_(model_prob, 1, target.unsqueeze(1), self.confidence)
+        model_prob = gather(paddle.to_tensor([self.confidence]), 1, target.unsqueeze(1))
+        scatter_add_(model_prob, 1, target.unsqueeze(1), paddle.to_tensor([self.confidence]))
         masked_fill_(model_prob, (target == self.ignore_index).unsqueeze(1), 0)
 
         return F.kl_div(output, model_prob, reduction='none').shape([batch_size, num_pos, -1]).sum(2)

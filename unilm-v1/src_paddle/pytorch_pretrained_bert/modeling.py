@@ -42,7 +42,7 @@ PRETRAINED_MODEL_ARCHIVE_MAP = {
     'bert-base-chinese': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-chinese.tar.gz",
 }
 CONFIG_NAME = 'bert_config.json'
-WEIGHTS_NAME = 'pytorch_model.bin'
+WEIGHTS_NAME = 'pytorch_model.pdparams'
 
 
 
@@ -569,8 +569,8 @@ class BertPredictionHeadTransform(nn.Layer):
         shit = self.dense.weight.transpose([1, 0])
         self.dense.weight = paddle.create_parameter(shape=shit.shape, dtype=str(shit.numpy().dtype), default_initializer=paddle.nn.initializer.Assign(shit))
         hidden_states = self.dense(hidden_states)
-        print("!!!WARNING:",self.dense.weight)
-        print("ERROR:", hidden_states)
+        # print("!!!WARNING:",self.dense.weight)
+        # print("ERROR:", hidden_states)
         log_paddle.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
         log_loss.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
         hidden_states = self.transform_act_fn(hidden_states)

@@ -67,10 +67,12 @@ class BertAdam(Optimizer):
         max_grad_norm: Maximum norm for the gradients (-1 means no clipping). Default: 1.0
     """
 
-    def __init__(self, params, lr=required, warmup=-1, t_total=-1, schedule='warmup_linear', b1=0.9, b2=0.999, e=1e-6, weight_decay=0.01, max_grad_norm=1.0):
-        if lr is not required and lr < 0.0:
+    def __init__(self, learning_rate=0.0, warmup=-1, parameters=None, t_total=-1, schedule='warmup_linear', b1=0.9, b2=0.999, e=1e-6, weight_decay=0.01, max_grad_norm=1.0):
+        # print("!!!ERROR",lr)
+        # exit(0)
+        if  learning_rate < 0.0:
             raise ValueError(
-                "Invalid learning rate: {} - should be >= 0.0".format(lr))
+                "Invalid learning rate: {} - should be >= 0.0".format(learning_rate))
         if schedule not in SCHEDULES:
             raise ValueError("Invalid schedule parameter: {}".format(schedule))
         if not 0.0 <= warmup < 1.0 and not warmup == -1:
@@ -85,10 +87,23 @@ class BertAdam(Optimizer):
         if not e >= 0.0:
             raise ValueError(
                 "Invalid epsilon value: {} - should be >= 0.0".format(e))
-        defaults = dict(lr=lr, schedule=schedule, warmup=warmup, t_total=t_total,
+        defaults = dict(learning_rate=learning_rate, schedule=schedule, warmup=warmup, t_total=t_total,
                         b1=b1, b2=b2, e=e, weight_decay=weight_decay,
                         max_grad_norm=max_grad_norm)
-        super(BertAdam, self).__init__(params, defaults)
+        # print("!!!ERROR",parameters)
+        # print("!!!ERROR",defaults)
+        super(BertAdam, self).__init__(
+            learning_rate = learning_rate,
+            parameters = parameters,
+            weight_decay = weight_decay
+        )
+        self.t_total = t_total
+        self.schedule = schedule
+        self.warmup = warmup
+        self.b1 = b1
+        self.b2 = b2
+        self.e = e
+        self.max_grad_norm = max_grad_norm
 
     def get_lr(self):
         lr = []
@@ -180,7 +195,7 @@ class BertAdam(Optimizer):
 
 
 class BertAdamFineTune(BertAdam):
-    def __init__(self, params, lr=required, warmup=-1, t_total=-1, schedule='warmup_linear', b1=0.9, b2=0.999, e=1e-6, weight_decay=0.01, max_grad_norm=1.0):
+    def __init__(self, params, lr=0, warmup=-1, t_total=-1, schedule='warmup_linear', b1=0.9, b2=0.999, e=1e-6, weight_decay=0.01, max_grad_norm=1.0):
         self.init_param_group = []
         super(BertAdamFineTune, self).__init__(params, lr, warmup,
                                                t_total, schedule, b1, b2, e, weight_decay, max_grad_norm)
