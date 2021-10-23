@@ -97,6 +97,7 @@ class BertAdam(Optimizer):
             parameters = parameters,
             weight_decay = weight_decay
         )
+        # self.parameters = parameters
         self.t_total = t_total
         self.schedule = schedule
         self.warmup = warmup
@@ -107,18 +108,17 @@ class BertAdam(Optimizer):
 
     def get_lr(self):
         lr = []
-        for group in self.param_groups:
-            for p in group['params']:
-                state = self.state[p]
-                if len(state) == 0:
-                    return [0]
-                if group['t_total'] != -1:
-                    schedule_fct = SCHEDULES[group['schedule']]
-                    lr_scheduled = group['lr'] * schedule_fct(
-                        state['step']/group['t_total'], group['warmup'])
-                else:
-                    lr_scheduled = group['lr']
-                lr.append(lr_scheduled)
+        for p in self.parameters:
+            state = self.state[p]
+            if len(state) == 0:
+                return [0]
+            if self.t_total != -1:
+                schedule_fct = SCHEDULES[self.schedule]
+                lr_scheduled = self.learning_rate * schedule_fct(
+                    state['step']/group['t_total'], group['warmup'])
+            else:
+                lr_scheduled = group['lr']
+            lr.append(lr_scheduled)
         return lr
 
     def step(self, closure=None):
@@ -152,7 +152,7 @@ class BertAdam(Optimizer):
                     state['next_v'] = paddle.zeros_like(p.data)
 
                 next_m, next_v = state['next_m'], state['next_v']
-                beta1, beta2 = group['b1'], group['b2']
+                beta1, beta2 = self.b1, self.b2
 
                 # Add grad clipping
                 if group['max_grad_norm'] > 0:

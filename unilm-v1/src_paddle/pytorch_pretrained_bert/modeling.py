@@ -14,6 +14,7 @@ import logging
 import tarfile
 import tempfile
 import shutil
+from apex.amp.frontend import initialize
 import numpy as np
 # from torch.nn.modules import module
 # from torch._C import T
@@ -176,7 +177,7 @@ class BertLayerNorm(nn.Layer):
         """Construct a layernorm module in the TF style (epsilon inside the square root).
         """
         super(BertLayerNorm, self).__init__()
-        print("HIDDEN SIZE:",hidden_size)
+        # print("HIDDEN SIZE:",hidden_size)
         x = paddle.ones([hidden_size])
         self.weight = paddle.create_parameter(shape=x.shape,
                     dtype=str(x.numpy().dtype),
@@ -336,13 +337,13 @@ class BertSelfAttention(nn.Layer):
 
     def forward(self, hidden_states, attention_mask, history_states=None, mask_qkv=None, seg_ids=None):
         if history_states is None:
-            log_paddle.add("BertSelfAttention_hidden_states",hidden_states.cpu().detach().numpy())
+            # log_paddle.add("BertSelfAttention_hidden_states",hidden_states.cpu().detach().numpy())
             mixed_query_layer = self.query(hidden_states)
             mixed_key_layer = self.key(hidden_states)
             mixed_value_layer = self.value(hidden_states)
-            log_paddle.add("BertSelfAttention_query",mixed_query_layer.cpu().detach().numpy())
-            log_paddle.add("BertSelfAttention_key",mixed_key_layer.cpu().detach().numpy())
-            log_paddle.add("BertSelfAttention_value", mixed_value_layer.cpu().detach().numpy())
+            # log_paddle.add("BertSelfAttention_query",mixed_query_layer.cpu().detach().numpy())
+            # log_paddle.add("BertSelfAttention_key",mixed_key_layer.cpu().detach().numpy())
+            # log_paddle.add("BertSelfAttention_value", mixed_value_layer.cpu().detach().numpy())
         else:
             log_paddle.add("BertSelfAttention_hidden_states",hidden_states.cpu().detach().numpy())
             x_states = paddle.concat((history_states, hidden_states), axis=1)
@@ -561,24 +562,26 @@ class BertPredictionHeadTransform(nn.Layer):
         if hasattr(config, 'relax_projection') and (config.relax_projection > 1):
             hid_size *= config.relax_projection
         self.dense = nn.Linear(config.hidden_size, hid_size, bias_attr=True)
+        # print("ERROR!!!", self.dense.weight)
+        
         self.LayerNorm = BertLayerNorm(hid_size, eps=1e-5)
-
+    
+    
     def forward(self, hidden_states):
-        log_paddle.add("BertPredictionHeadTransform_hidden_states_origin", hidden_states.cpu().detach().numpy())
-        log_loss.add("BertPredictionHeadTransform_hidden_states_origin", hidden_states.cpu().detach().numpy())
-        shit = self.dense.weight.transpose([1, 0])
-        self.dense.weight = paddle.create_parameter(shape=shit.shape, dtype=str(shit.numpy().dtype), default_initializer=paddle.nn.initializer.Assign(shit))
+        # log_paddle.add("BertPredictionHeadTransform_hidden_states_origin", hidden_states.cpu().detach().numpy())
+        # log_loss.add("BertPredictionHeadTransform_hidden_states_origin", hidden_states.cpu().detach().numpy())
+        
         hidden_states = self.dense(hidden_states)
         # print("!!!WARNING:",self.dense.weight)
         # print("ERROR:", hidden_states)
-        log_paddle.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
-        log_loss.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
+        # log_paddle.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
+        # log_loss.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
         hidden_states = self.transform_act_fn(hidden_states)
-        log_paddle.add("BertPredictionHeadTransform_hidden_states_act_fn", hidden_states.cpu().detach().numpy())
-        log_loss.add("BertPredictionHeadTransform_hidden_states_act_fn", hidden_states.cpu().detach().numpy())
+        # log_paddle.add("BertPredictionHeadTransform_hidden_states_act_fn", hidden_states.cpu().detach().numpy())
+        # log_loss.add("BertPredictionHeadTransform_hidden_states_act_fn", hidden_states.cpu().detach().numpy())
         hidden_states = self.LayerNorm(hidden_states)
-        log_paddle.add("BertPredictionHeadTransform_hidden_states_Norm", hidden_states.cpu().detach().numpy())
-        log_loss.add("BertPredictionHeadTransform_hidden_states_Norm", hidden_states.cpu().detach().numpy())
+        # log_paddle.add("BertPredictionHeadTransform_hidden_states_Norm", hidden_states.cpu().detach().numpy())
+        # log_loss.add("BertPredictionHeadTransform_hidden_states_Norm", hidden_states.cpu().detach().numpy())
         return hidden_states
 
 
@@ -595,8 +598,8 @@ class BertLMPredictionHead(nn.Layer):
         bert_model_embedding_weights = bert_model_embedding_weights.transpose([1,0])
         bert_weights = paddle.create_parameter(shape=bert_model_embedding_weights.shape, dtype=str(bert_model_embedding_weights.numpy().dtype), default_initializer=paddle.nn.initializer.Assign(bert_model_embedding_weights))
         self.decoder.weight = bert_weights
-        print("!!!WEIGHT:", bert_weights)
-        print("!!!bert_model_embedding_weights shape:", bert_model_embedding_weights.shape)
+        # print("!!!WEIGHT:", bert_weights)
+        # print("!!!bert_model_embedding_weights shape:", bert_model_embedding_weights.shape)
         x = paddle.zeros([bert_model_embedding_weights.shape[1]])
         self.bias = paddle.create_parameter(shape=x.shape, dtype=str(x.numpy().dtype), default_initializer=paddle.nn.initializer.Assign(x))
         if hasattr(config, 'relax_projection') and (config.relax_projection > 1):
@@ -619,8 +622,8 @@ class BertLMPredictionHead(nn.Layer):
             if self.fp32_embedding:
                 self.transform.half()
         hidden_states = self.transform(self.type_converter(hidden_states))
-        log_loss.add("BertLMPredictionHead_hidden_states", hidden_states.cpu().detach().numpy())
-        log_paddle.add("BertLMPredictionHead_hidden_states", hidden_states.cpu().detach().numpy())
+        # log_loss.add("BertLMPredictionHead_hidden_states", hidden_states.cpu().detach().numpy())
+        # log_paddle.add("BertLMPredictionHead_hidden_states", hidden_states.cpu().detach().numpy())
         if self.relax_projection > 1:
             num_batch = hidden_states.shape[0]
             num_pos = hidden_states.shape[1]
@@ -628,14 +631,14 @@ class BertLMPredictionHead(nn.Layer):
             hidden_states = hidden_states.reshape([
                 num_batch, num_pos, self.relax_projection, -1])[paddle.arange(0, num_batch).long(), :, task_idx, :]
         if self.fp32_embedding:
-            print("!!!HIDDEN_STATE:",hidden_states.shape)
-            print("!!!BIAS shape:", self.bias.shape)
+            # print("!!!HIDDEN_STATE:",hidden_states.shape)
+            # print("!!!BIAS shape:", self.bias.shape)
             hidden_states = F.linear(self.type_converter(hidden_states), self.type_converter(
                 self.decoder.weight), self.type_converter(self.bias))
         else:
-            print("!!!HIDDEN_STATE:", hidden_states.shape)
-            print("!!!BIAS shape:", self.bias.shape)
-            print("SHAPE AFTER DECODING:", self.decoder(hidden_states).shape)
+            # print("!!!HIDDEN_STATE:", hidden_states.shape)
+            # print("!!!BIAS shape:", self.bias.shape)
+            # print("SHAPE AFTER DECODING:", self.decoder(hidden_states).shape)
             hidden_states = self.decoder(hidden_states) + self.bias
         return hidden_states
 
@@ -670,7 +673,7 @@ class BertPreTrainingHeads(nn.Layer):
 
     def forward(self, sequence_output, pooled_output, task_idx=None):
         prediction_scores = self.predictions(sequence_output, task_idx)
-        log_loss.add("BertPreTrainingHeads_prediction_scores", prediction_scores.cpu().detach().numpy())
+        # log_loss.add("BertPreTrainingHeads_prediction_scores", prediction_scores.cpu().detach().numpy())
         if pooled_output is None:
             seq_relationship_score = None
         else:
@@ -1099,18 +1102,18 @@ class BertModel(PreTrainedBertModel):
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, output_all_encoded_layers=True, mask_qkv=None, task_idx=None):
         extended_attention_mask = self.get_extended_attention_mask(
             input_ids, token_type_ids, attention_mask)
-        log_paddle.add("Bert_Model_extended_attenrion_mask",extended_attention_mask.cpu().detach().numpy())
+        # log_paddle.add("Bert_Model_extended_attenrion_mask",extended_attention_mask.cpu().detach().numpy())
         embedding_output = self.embeddings(
             input_ids, token_type_ids, task_idx=task_idx)
-        log_paddle.add("Bert_Model_embedding_output", embedding_output.cpu().detach().numpy())
+        # log_paddle.add("Bert_Model_embedding_output", embedding_output.cpu().detach().numpy())
         encoded_layers = self.encoder(embedding_output, extended_attention_mask,
                                       output_all_encoded_layers=output_all_encoded_layers, mask_qkv=mask_qkv, seg_ids=token_type_ids)
         # print("!!!tui:",encoded_layers)
         sequence_output = encoded_layers[-1]
-        log_paddle.add("Bert_Model_sequence_output", sequence_output.cpu().detach().numpy())
+        # log_paddle.add("Bert_Model_sequence_output", sequence_output.cpu().detach().numpy())
         # print("!!!tui:",sequence_output)
         pooled_output = self.pooler(sequence_output)
-        log_paddle.add("Bert_Model_pooled_output", pooled_output.cpu().detach().numpy())
+        # log_paddle.add("Bert_Model_pooled_output", pooled_output.cpu().detach().numpy())
         if not output_all_encoded_layers:
             encoded_layers = encoded_layers[-1]
         return encoded_layers, pooled_output
@@ -1320,15 +1323,15 @@ class BertForPreTrainingLossMask(PreTrainedBertModel):
                              (attention_mask_task_2 & task_2.reshape([-1, 1, 1])) | \
                              (attention_mask_task_3 & task_3.reshape([-1, 1, 1]))
             attention_mask = attention_mask.cast(input_ids)
-        log_paddle.add("input_ids", input_ids.cpu().detach().numpy())
-        log_paddle.add("token_type_ids", token_type_ids.cpu().detach().numpy())
-        log_paddle.add("attention_mask", attention_mask.cpu().detach().numpy())
+        # log_paddle.add("input_ids", input_ids.cpu().detach().numpy())
+        # log_paddle.add("token_type_ids", token_type_ids.cpu().detach().numpy())
+        # log_paddle.add("attention_mask", attention_mask.cpu().detach().numpy())
         # log_paddle.add("mask_qkv", mask_qkv.cpu().detach().numpy())
         # log_paddle.add("task_idx", task_idx.cpu().detach().numpy())
         sequence_output, pooled_output = self.bert(
             input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False, mask_qkv=mask_qkv, task_idx=task_idx)
-        log_paddle.add("sequence_output", sequence_output.cpu().detach().numpy())
-        log_paddle.add("pooled_output", pooled_output.cpu().detach().numpy())
+        # log_paddle.add("sequence_output", sequence_output.cpu().detach().numpy())
+        # log_paddle.add("pooled_output", pooled_output.cpu().detach().numpy())
         
         def gather_seq_out_by_pos(seq, pos):
             return gather(seq, 1, pos.unsqueeze(2).expand([-1, -1, seq.shape[-1]]))
@@ -1360,34 +1363,34 @@ class BertForPreTrainingLossMask(PreTrainedBertModel):
                     sequence_output, masked_pos)
                 prediction_scores, seq_relationship_score = self.cls(
                     sequence_output_masked, pooled_output, task_idx=task_idx)
-                log_paddle.add("sequence_output_masked", sequence_output_masked.cpu().detach().numpy())
-            log_paddle.add("prediction_scores", prediction_scores.cpu().detach().numpy())
-            log_paddle.add("seq_relationship_score", seq_relationship_score.cpu().detach().numpy())
-            log_paddle.save("/lustre/S/fuqiang/unilm/unilm/unilm-v1/bert-cased-pretrained-cache/paddle_forward.npy")
+                # log_paddle.add("sequence_output_masked", sequence_output_masked.cpu().detach().numpy())
+            # log_paddle.add("prediction_scores", prediction_scores.cpu().detach().numpy())
+            # log_paddle.add("seq_relationship_score", seq_relationship_score.cpu().detach().numpy())
+            # log_paddle.save("/lustre/S/fuqiang/unilm/unilm/unilm-v1/bert-cased-pretrained-cache/paddle_forward.npy")
             return prediction_scores, seq_relationship_score
 
         # masked lm
         sequence_output_masked = gather_seq_out_by_pos(
             sequence_output, masked_pos)
-        log_loss.add("sequence_output_masked", sequence_output_masked.cpu().detach().numpy())
-        log_loss.add("pooled_output", pooled_output.cpu().detach().numpy())
+        # log_loss.add("sequence_output_masked", sequence_output_masked.cpu().detach().numpy())
+        # log_loss.add("pooled_output", pooled_output.cpu().detach().numpy())
         prediction_scores_masked, seq_relationship_score = self.cls(
             sequence_output_masked, pooled_output, task_idx=task_idx)
-        log_loss.add("prediction_scores_masked", prediction_scores_masked.cpu().detach().numpy())
-        print("!!!Added prediction to log_loss")
-        log_paddle.add("sequence_output_masked", sequence_output_masked.cpu().detach().numpy())
-        log_paddle.add("prediction_scores_masked", prediction_scores_masked.cpu().detach().numpy())
-        log_paddle.add("seq_relationship_score", seq_relationship_score.cpu().detach().numpy())
-        log_paddle.save("/lustre/S/fuqiang/unilm/unilm/unilm-v1/bert-cased-pretrained-cache/paddle_forward.npy")
+        # log_loss.add("prediction_scores_masked", prediction_scores_masked.cpu().detach().numpy())
+        # print("!!!Added prediction to log_loss")
+        # log_paddle.add("sequence_output_masked", sequence_output_masked.cpu().detach().numpy())
+        # log_paddle.add("prediction_scores_masked", prediction_scores_masked.cpu().detach().numpy())
+        # log_paddle.add("seq_relationship_score", seq_relationship_score.cpu().detach().numpy())
+        # log_paddle.save("/lustre/S/fuqiang/unilm/unilm/unilm-v1/bert-cased-pretrained-cache/paddle_forward.npy")
         if self.crit_mask_lm_smoothed:
             masked_lm_loss = self.crit_mask_lm_smoothed(
                 F.log_softmax(prediction_scores_masked.astype('float'), axis=-1), masked_lm_labels)
         else:
-            print("!!!prediction_scores_masked shape:", prediction_scores_masked.transpose([0,2,1]).shape)
-            print("!!!prediction_scores_masked shape:", prediction_scores_masked.shape)
+            # print("!!!prediction_scores_masked shape:", prediction_scores_masked.transpose([0,2,1]).shape)
+            # print("!!!prediction_scores_masked shape:", prediction_scores_masked.shape)
             masked_lm_loss = self.crit_mask_lm(
                 prediction_scores_masked.transpose([0, 2, 1]).astype('float'), masked_lm_labels)
-            log_loss.add("masked_lm_loss", masked_lm_loss.cpu().detach().numpy())
+            # log_loss.add("masked_lm_loss", masked_lm_loss.cpu().detach().numpy())
         masked_lm_loss = loss_mask_and_normalize(
             masked_lm_loss.astype('float'), masked_weights)
 
@@ -1410,7 +1413,7 @@ class BertForPreTrainingLossMask(PreTrainedBertModel):
             masked_lm_loss = masked_lm_loss + masked_lm_loss_2
 
         if pair_x is None or pair_y is None or pair_r is None or pair_pos_neg_mask is None or pair_loss_mask is None:
-            log_loss.save("loss_paddle.npy")
+            # log_loss.save("loss_paddle.npy")
             return masked_lm_loss, next_sentence_loss
 
         # pair and relation

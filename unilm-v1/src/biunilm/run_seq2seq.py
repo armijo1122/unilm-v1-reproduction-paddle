@@ -427,6 +427,7 @@ def main():
             for step, batch in enumerate(iter_bar):
                 batch = [
                     t.to(device) if t is not None else None for t in batch]
+                
                 if args.has_sentence_oracle:
                     input_ids, segment_ids, input_mask, mask_qkv, lm_label_ids, masked_pos, masked_weights, is_next, task_idx, oracle_pos, oracle_weights, oracle_labels = batch
                 else:
