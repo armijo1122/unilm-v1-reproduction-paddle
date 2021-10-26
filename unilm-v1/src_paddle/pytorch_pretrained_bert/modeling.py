@@ -14,7 +14,7 @@ import logging
 import tarfile
 import tempfile
 import shutil
-from apex.amp.frontend import initialize
+# from apex.amp.frontend import initialize
 import numpy as np
 # from torch.nn.modules import module
 # from torch._C import T
@@ -24,13 +24,13 @@ import paddle
 from paddle import nn
 from paddle.nn import CrossEntropyLoss, MSELoss
 import paddle.nn.functional as F
-from torch_to_paddle_api.api import gather
+# from torch_to_paddle_api.api import gather
 
 from .file_utils import cached_path
 from .loss import LabelSmoothingLoss
-from reprod_log import ReprodLogger
-log_paddle = ReprodLogger()
-log_loss = ReprodLogger()
+# from reprod_log import ReprodLogger
+# log_paddle = ReprodLogger()
+# log_loss = ReprodLogger()
 logger = logging.getLogger(__name__)
 
 PRETRAINED_MODEL_ARCHIVE_MAP = {
@@ -345,15 +345,10 @@ class BertSelfAttention(nn.Layer):
             # log_paddle.add("BertSelfAttention_key",mixed_key_layer.cpu().detach().numpy())
             # log_paddle.add("BertSelfAttention_value", mixed_value_layer.cpu().detach().numpy())
         else:
-            log_paddle.add("BertSelfAttention_hidden_states",hidden_states.cpu().detach().numpy())
             x_states = paddle.concat((history_states, hidden_states), axis=1)
-            log_paddle.add("BertSelfAttention_x_states",x_states.cpu().detach().numpy())
             mixed_query_layer = self.query(hidden_states)
             mixed_key_layer = self.key(x_states)
             mixed_value_layer = self.value(x_states)
-            log_paddle.add("BertSelfAttention_query",mixed_query_layer.cpu().detach().numpy())
-            log_paddle.add("BertSelfAttention_key",mixed_key_layer.cpu().detach().numpy())
-            log_paddle.add("BertSelfAttention_value", mixed_value_layer.cpu().detach().numpy())
 
 
         query_layer = self.transpose_for_scores(mixed_query_layer, mask_qkv)
@@ -421,9 +416,7 @@ class BertAttention(nn.Layer):
     def forward(self, input_tensor, attention_mask, history_states=None, mask_qkv=None, seg_ids=None):
         self_output = self.self(
             input_tensor, attention_mask, history_states=history_states, mask_qkv=mask_qkv, seg_ids=seg_ids)
-        log_paddle.add("BertAttention_self_output", self_output.cpu().detach().numpy())
         attention_output = self.output(self_output, input_tensor)
-        log_paddle.add("BertAttention_attention_output", attention_output.cpu().detach().numpy())
         return attention_output
     
 
@@ -495,7 +488,6 @@ class BertLayer(nn.Layer):
     def forward(self, hidden_states, attention_mask, history_states=None, mask_qkv=None, seg_ids=None):
         attention_output = self.attention(
             hidden_states, attention_mask, history_states=history_states, mask_qkv=mask_qkv, seg_ids=seg_ids)
-        log_paddle.add("BertLayer_attention_output", attention_output.cpu().detach().numpy())
         if self.ffn_type:
             layer_output = self.ffn(attention_output)
         else:
@@ -514,7 +506,6 @@ class BertEncoder(nn.Layer):
     def forward(self, hidden_states, attention_mask, output_all_encoded_layers=True, prev_embedding=None, prev_encoded_layers=None, mask_qkv=None, seg_ids=None):
         # history embedding and encoded layer must be simultanously given
         assert (prev_embedding is None) == (prev_encoded_layers is None)
-        log_paddle.add("BertEncoder_hidden_states", hidden_states.cpu().detach().numpy())
         all_encoder_layers = []
         if (prev_embedding is not None) and (prev_encoded_layers is not None):
             history_states = prev_embedding
@@ -546,9 +537,7 @@ class BertPooler(nn.Layer):
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
         first_token_tensor = hidden_states[:, 0]
-        log_paddle.add("Bert_Pooler_first_token_tensor", first_token_tensor.cpu().detach().numpy())
         pooled_output = self.dense(first_token_tensor)
-        log_paddle.add("Bert_Pooler_pooled_output", pooled_output.cpu().detach().numpy())
         pooled_output = self.activation(pooled_output)
         return pooled_output
 
@@ -596,7 +585,11 @@ class BertLMPredictionHead(nn.Layer):
                                  bert_model_embedding_weights.shape[1],
                                  bias_attr = False)
         bert_model_embedding_weights = bert_model_embedding_weights.transpose([1,0])
-        bert_weights = paddle.create_parameter(shape=bert_model_embedding_weights.shape, dtype=str(bert_model_embedding_weights.numpy().dtype), default_initializer=paddle.nn.initializer.Assign(bert_model_embedding_weights))
+        bert_weights = paddle.create_parameter(
+            shape=bert_model_embedding_weights.shape, 
+            dtype=str(bert_model_embedding_weights.numpy().dtype), 
+            default_initializer=paddle.nn.initializer.Assign(bert_model_embedding_weights)
+        )
         self.decoder.weight = bert_weights
         # print("!!!WEIGHT:", bert_weights)
         # print("!!!bert_model_embedding_weights shape:", bert_model_embedding_weights.shape)
@@ -1250,6 +1243,8 @@ class BertForPreTrainingLossMask(PreTrainedBertModel):
 
     def __init__(self, config, num_labels=2, num_rel=0, num_sentlvl_labels=0, no_nsp=False):
         super(BertForPreTrainingLossMask, self).__init__(config)
+        print("!!!INIT STAGE:", config.attention_probs_dropout_prob)
+        print("!!!INIT STAGE:", config.hidden_dropout_prob)
         self.bert = BertModel(config)
         self.cls = BertPreTrainingHeads(
             config, self.bert.embeddings.word_embeddings.weight, num_labels=num_labels)
@@ -1277,6 +1272,8 @@ class BertForPreTrainingLossMask(PreTrainedBertModel):
             self.crit_mask_lm_smoothed = None
         self.apply(self.init_bert_weights)
         self.bert.rescale_some_parameters()
+        print("!!!END INIT STAGE:", config.attention_probs_dropout_prob)
+        print("!!!END INIT STAGE:", config.hidden_dropout_prob)
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, masked_lm_labels=None,
                 next_sentence_label=None, masked_pos=None, masked_weights=None, task_idx=None, pair_x=None,

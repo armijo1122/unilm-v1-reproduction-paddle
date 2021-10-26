@@ -44,7 +44,7 @@ for p in paddle_list:
     if "variance" in p:
         t = p.replace("_variance", "running_var")
     if t in torch_list:
-        if 'cls.predictions.decoder.weight' in p or 'cls.seq_relationship.weight' in p or 'self.query.weight' in p or 'self.key.weight' in p or 'self.value.weight' in p or 'pooler.dense.weight' in p:
+        if 'cls.predictions.decoder.weight' in p or 'cls.seq_relationship.weight' in p or 'self.query.weight' in p or 'self.key.weight' in p or 'self.value.weight' in p or 'pooler.dense.weight' in p or 'cls.predictions.transform.dense.weight' in p:
             paddle_state_dict[p] = state_dict[t].detach().cpu().numpy().T.astype(np.float32)
         elif 'fc' not in p:
             paddle_state_dict[p] = state_dict[t].detach().cpu().numpy().astype(np.float32)

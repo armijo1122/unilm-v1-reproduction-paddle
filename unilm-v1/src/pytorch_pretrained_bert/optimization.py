@@ -94,6 +94,7 @@ class BertAdam(Optimizer):
         lr = []
         for group in self.param_groups:
             for p in group['params']:
+                print("T_TOTAL:", group['t_total'])
                 state = self.state[p]
                 if len(state) == 0:
                     return [0]
@@ -140,6 +141,7 @@ class BertAdam(Optimizer):
                 beta1, beta2 = group['b1'], group['b2']
 
                 # Add grad clipping
+                # print("MAX_GRAD_NORM:",group['max_grad_norm'])
                 if group['max_grad_norm'] > 0:
                     clip_grad_norm_(p, group['max_grad_norm'])
 
@@ -148,7 +150,7 @@ class BertAdam(Optimizer):
                 next_m.mul_(beta1).add_(1 - beta1, grad)
                 next_v.mul_(beta2).addcmul_(1 - beta2, grad, grad)
                 update = next_m / (next_v.sqrt() + group['e'])
-
+                # print("UPDATE:", update)
                 # Just adding the square of the weights to the loss function is *not*
                 # the correct way of using L2 regularization/weight decay with Adam,
                 # since that will interact with the m and v parameters in strange ways.
@@ -156,16 +158,20 @@ class BertAdam(Optimizer):
                 # Instead we want to decay the weights in a manner that doesn't interact
                 # with the m/v parameters. This is equivalent to adding the square
                 # of the weights to the loss with plain (non-momentum) SGD.
+                # print("WEIGHT_DECAY", group['weight_decay'])
+                # print("P.data:", p.data)
                 if group['weight_decay'] > 0.0:
                     update += group['weight_decay'] * p.data
-
+                # print("!!!T_TOTAL:",group['t_total'])
+                # print("STATE STEP:", state['step'])
                 if group['t_total'] != -1:
+                    print("!!!T_TOTAL:",group['t_total'])
                     schedule_fct = SCHEDULES[group['schedule']]
                     lr_scheduled = group['lr'] * schedule_fct(
                         state['step']/group['t_total'], group['warmup'])
                 else:
                     lr_scheduled = group['lr']
-
+                # print("!!!LR_SCHEDULE:", lr_scheduled)
                 update_with_lr = lr_scheduled * update
                 p.data.add_(-update_with_lr)
 

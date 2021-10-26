@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import sys
 import os
-sys.path.append(os.path.dirname('/lustre/S/fuqiang/unilm/unilm/unilm-v1/src/'))
+sys.path.append(os.path.dirname('/lustre/S/fuqiang/unilm/unilm/unilm-v1/src_paddle/'))
 
 import logging
 import glob
@@ -17,17 +17,21 @@ import random
 from pathlib import Path
 from tqdm import tqdm, trange
 import numpy as np
-import torch
-from torch.utils.data import RandomSampler
-from torch.utils.data.distributed import DistributedSampler
+import paddle
+from paddle.io import RandomSampler
+from paddle.io import DistributedBatchSampler
+from paddle.optimizer import Adam
+from paddle.optimizer import Adamax
 
 from pytorch_pretrained_bert.tokenization import BertTokenizer, WhitespaceTokenizer
 from pytorch_pretrained_bert.modeling import BertForPreTrainingLossMask
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 
-from nn.data_parallel import DataParallelImbalance
+# from nn.data_parallel import DataParallelImbalance
+from paddle import DataParallel as DataParallelImbalance
 import seq2seq_loader as seq2seq_loader
-import torch.distributed as dist
+import paddle.distributed as dist
+import paddle.distributed.fleet as fleet
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -36,9 +40,25 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message
 logger = logging.getLogger(__name__)
 
 
+class DistributedSampler(DistributedBatchSampler):
+    def __init__(self,
+                 dataset,
+                 num_replicas=None,
+                 rank=None,
+                 shuffle=True,
+                 seed=0,
+                 drop_last=False):
+        super().__init__(
+            dataset=dataset,
+            batch_size=1,
+            num_replicas=num_replicas,
+            rank=rank,
+            shuffle=shuffle,
+            drop_last=drop_last)
+
 def _get_max_epoch_model(output_dir):
-    fn_model_list = glob.glob(os.path.join(output_dir, "model.*.bin"))
-    fn_optim_list = glob.glob(os.path.join(output_dir, "optim.*.bin"))
+    fn_model_list = glob.glob(os.path.join(output_dir, "model.*.pdparams"))
+    fn_optim_list = glob.glob(os.path.join(output_dir, "optim.*.pdparams"))
     if (not fn_model_list) or (not fn_optim_list):
         return None
     both_set = set([int(Path(fn).stem.split('.')[-1]) for fn in fn_model_list]
@@ -65,6 +85,8 @@ def main():
     parser.add_argument("--bert_model", default=None, type=str, required=True,
                         help="Bert pre-trained model selected in the list: bert-base-uncased, "
                              "bert-large-uncased, bert-base-cased, bert-base-multilingual, bert-base-chinese.")
+    parser.add_argument("--vocab", default=None, type=str, required=True,
+                        help="Pretrained vacab")
     parser.add_argument("--config_path", default=None, type=str,
                         help="Bert config file path.")
     parser.add_argument("--output_dir",
@@ -232,19 +254,18 @@ def main():
     os.makedirs(args.log_dir, exist_ok=True)
     json.dump(args.__dict__, open(os.path.join(
         args.output_dir, 'opt.json'), 'w'), sort_keys=True, indent=2)
-
+    # print("!!!ERROR",args.local_rank)
     if args.local_rank == -1 or args.no_cuda:
-        device = torch.device(
-            "cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
-        n_gpu = torch.cuda.device_count()
-    else:
-        torch.cuda.set_device(args.local_rank)
-        device = torch.device("cuda", args.local_rank)
+        paddle.set_device("gpu:0" if paddle.device.is_compiled_with_cuda() and not args.no_cuda else "cpu") 
         n_gpu = 1
+    else:
+        # paddle.device.set_device(args.local_rank)
+        paddle.device.set_device("gpu:0")
+        n_gpu = 4   # CHANGE HERE!!!
         # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
-        dist.init_process_group(backend='nccl')
+        dist.init_parallel_env()
     logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
-        device, n_gpu, bool(args.local_rank != -1), args.fp16))
+        paddle.device.get_device(), n_gpu, bool(args.local_rank != -1), args.fp16))
 
     if args.gradient_accumulation_steps < 1:
         raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
@@ -255,9 +276,9 @@ def main():
 
     random.seed(args.seed)
     np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    paddle.seed(args.seed)
     if n_gpu > 0:
-        torch.cuda.manual_seed_all(args.seed)
+        paddle.seed(args.seed)
 
     if not args.do_train and not args.do_eval:
         raise ValueError(
@@ -267,7 +288,7 @@ def main():
         # Make sure only the first process in distributed training will download model & vocab
         dist.barrier()
     tokenizer = BertTokenizer.from_pretrained(
-        args.bert_model, do_lower_case=args.do_lower_case)
+        args.vocab, do_lower_case=args.do_lower_case)
     if args.max_position_embeddings:
         tokenizer.max_len = args.max_position_embeddings
     data_tokenizer = WhitespaceTokenizer() if args.tokenized_input else tokenizer
@@ -291,16 +312,17 @@ def main():
             train_sampler = RandomSampler(train_dataset, replacement=False)
             _batch_size = args.train_batch_size
         else:
-            train_sampler = DistributedSampler(train_dataset)
             _batch_size = args.train_batch_size // dist.get_world_size()
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=_batch_size, sampler=train_sampler,
-                                                       num_workers=args.num_workers, collate_fn=seq2seq_loader.batch_list_to_batch_tensors, pin_memory=False)
+            train_sampler = DistributedSampler(train_dataset)
+        train_sampler = paddle.io.BatchSampler(sampler = train_sampler, batch_size = _batch_size)
+        train_dataloader = paddle.io.DataLoader(train_dataset, batch_sampler = train_sampler,
+                                                       num_workers=args.num_workers, collate_fn=seq2seq_loader.batch_list_to_batch_tensors, use_shared_memory=True)
 
     # note: args.train_batch_size has been changed to (/= args.gradient_accumulation_steps)
     # t_total = int(math.ceil(len(train_dataset.ex_list) / args.train_batch_size)
     t_total = int(len(train_dataloader) * args.num_train_epochs /
                   args.gradient_accumulation_steps)
-
+    print("Successfully Loaded!")
     amp_handle = None
     if args.fp16 and args.amp:
         from apex import amp
@@ -327,16 +349,16 @@ def main():
     else:
         if recover_step:
             logger.info("***** Recover model: %d *****", recover_step)
-            model_recover = torch.load(os.path.join(
-                args.output_dir, "model.{0}.bin".format(recover_step)), map_location='cpu')
+            model_recover = paddle.load(os.path.join(
+                args.output_dir, "model.{0}.pdparams".format(recover_step)))
             # recover_step == number of epochs
             global_step = math.floor(
                 recover_step * t_total / args.num_train_epochs)
         elif args.model_recover_path:
             logger.info("***** Recover model: %s *****",
                         args.model_recover_path)
-            model_recover = torch.load(
-                args.model_recover_path, map_location='cpu')
+            model_recover = paddle.load(
+                args.model_recover_path)
             global_step = 0
         model = BertForPreTrainingLossMask.from_pretrained(
             args.bert_model, state_dict=model_recover, num_labels=cls_num_labels, num_rel=0, type_vocab_size=type_vocab_size, config_path=args.config_path, task_idx=3, num_sentlvl_labels=num_sentlvl_labels, max_position_embeddings=args.max_position_embeddings, label_smoothing=args.label_smoothing, fp32_embedding=args.fp32_embedding, relax_projection=relax_projection, new_pos_ids=args.new_pos_ids, ffn_type=args.ffn_type, hidden_dropout_prob=args.hidden_dropout_prob, attention_probs_dropout_prob=args.attention_probs_dropout_prob, num_qkv=args.num_qkv, seg_emb=args.seg_emb)
@@ -344,15 +366,15 @@ def main():
         dist.barrier()
 
     if args.fp16:
-        model.half()
+        # model.half()
         if args.fp32_embedding:
             model.bert.embeddings.word_embeddings.float()
             model.bert.embeddings.position_embeddings.float()
             model.bert.embeddings.token_type_embeddings.float()
-    model.to(device)
+    # model.to(device)
     if args.local_rank != -1:
         try:
-            from torch.nn.parallel import DistributedDataParallel as DDP
+            from paddle.nn.parallel import DistributedDataParallel as DDP
         except ImportError:
             raise ImportError("DistributedDataParallel")
         model = DDP(model, device_ids=[
@@ -370,7 +392,9 @@ def main():
         {'params': [p for n, p in param_optimizer if any(
             nd in n for nd in no_decay)], 'weight_decay': 0.0}
     ]
+    print("Hello")
     if args.fp16:
+        print("FP16!!!")
         try:
             # from apex.optimizers import FP16_Optimizer
             from pytorch_pretrained_bert.optimization_fp16 import FP16_Optimizer_State
@@ -390,52 +414,75 @@ def main():
             optimizer = FP16_Optimizer_State(
                 optimizer, static_loss_scale=args.loss_scale)
     else:
-        optimizer = BertAdam(optimizer_grouped_parameters,
-                             lr=args.learning_rate,
-                             warmup=args.warmup_proportion,
-                             t_total=t_total)
-
+        # optimizer = BertAdam(
+        #                     parameters=optimizer_grouped_parameters[0]["params"],
+        #                     weight_decay=optimizer_grouped_parameters[0]["weight_decay"],
+        #                     learning_rate=args.learning_rate,
+        #                     warmup=args.warmup_proportion,
+        #                     t_total=t_total)
+        optimizer = Adamax(
+                        parameters=optimizer_grouped_parameters,
+                        learning_rate=args.learning_rate,
+                        epsilon = 1e-6
+        )
+    scaler = paddle.amp.GradScaler(init_loss_scaling=1024)
     if recover_step:
         logger.info("***** Recover optimizer: %d *****", recover_step)
-        optim_recover = torch.load(os.path.join(
-            args.output_dir, "optim.{0}.bin".format(recover_step)), map_location='cpu')
+        optim_recover = paddle.load(os.path.join(
+            args.output_dir, "optim.{0}.pdparams".format(recover_step)))
         if hasattr(optim_recover, 'state_dict'):
             optim_recover = optim_recover.state_dict()
-        optimizer.load_state_dict(optim_recover)
+        optimizer.set_state_dict(optim_recover)
         if args.loss_scale == 0:
             logger.info("***** Recover optimizer: dynamic_loss_scale *****")
             optimizer.dynamic_loss_scale = True
 
     logger.info("***** CUDA.empty_cache() *****")
-    torch.cuda.empty_cache()
-
+    # torch.cuda.empty_cache()
     if args.do_train:
         logger.info("***** Running training *****")
         logger.info("  Batch size = %d", args.train_batch_size)
         logger.info("  Num steps = %d", t_total)
 
-        model.train()
         if recover_step:
             start_epoch = recover_step+1
         else:
             start_epoch = 1
-        for i_epoch in trange(start_epoch, int(args.num_train_epochs)+1, desc="Epoch", disable=args.local_rank not in (-1, 0)):
-            logger.info("!!!EPOCH = {epoch}".format(epoch = i_epoch))
+        idx = 0
+        # total_steps = args.num_train_epochs*len(train_dataloader)
+        # print("111",total_steps)
+        # print("!!!451")
+        # progress_bar = tqdm(range(t_total))
+        # print("!!!453")
+        # for i_epoch in trange(start_epoch, int(args.num_train_epochs)+1, desc="Epoch", disable=args.local_rank not in (-1, 0)):
+        logger.info("START Training!")
+        for i_epoch in range(int(args.num_train_epochs)+1):
+            print("!!!454")
+            print(args.local_rank)
             if args.local_rank != -1:
                 train_sampler.set_epoch(i_epoch)
-            iter_bar = tqdm(train_dataloader, desc='Iter (loss=X.XXX)',
-                            disable=args.local_rank not in (-1, 0))
-            for step, batch in enumerate(iter_bar):
+            print("00000000")
+            # iter_bar = tqdm(train_dataloader, desc='Iter (loss=X.XXX)',
+            #                 disable=args.local_rank not in (-1, 0))
+            # logger.info("11111111")
+            logger.info("LEN = {len}".format(len = len(train_dataloader)))
+            for step, batch in enumerate(train_dataloader):
+                # logger.info("2222222")
+                model.train()
+                # print("STEP",step,batch)
+                idx += 1
                 batch = [
-                    t.to(device) if t is not None else None for t in batch]
+                    t if t is not None else None for t in batch]
+                # print("IDX", idx, batch)
                 
                 if args.has_sentence_oracle:
                     input_ids, segment_ids, input_mask, mask_qkv, lm_label_ids, masked_pos, masked_weights, is_next, task_idx, oracle_pos, oracle_weights, oracle_labels = batch
                 else:
                     input_ids, segment_ids, input_mask, mask_qkv, lm_label_ids, masked_pos, masked_weights, is_next, task_idx = batch
                     oracle_pos, oracle_weights, oracle_labels = None, None, None
-                loss_tuple = model(input_ids, segment_ids, input_mask, lm_label_ids, is_next, masked_pos=masked_pos, masked_weights=masked_weights, task_idx=task_idx, masked_pos_2=oracle_pos, masked_weights_2=oracle_weights,
-                                   masked_labels_2=oracle_labels, mask_qkv=mask_qkv)
+                with paddle.amp.auto_cast():
+                    loss_tuple = model(input_ids, segment_ids, input_mask, lm_label_ids, is_next, masked_pos=masked_pos, masked_weights=masked_weights, task_idx=task_idx, masked_pos_2=oracle_pos, masked_weights_2=oracle_weights,
+                                    masked_labels_2=oracle_labels, mask_qkv=mask_qkv)
                 masked_lm_loss, next_sentence_loss = loss_tuple
                 if n_gpu > 1:    # mean() to average on multi-gpu.
                     # loss = loss.mean()
@@ -444,12 +491,14 @@ def main():
                 loss = masked_lm_loss + next_sentence_loss
 
                 # logging for each step (i.e., before normalization by args.gradient_accumulation_steps)
-                iter_bar.set_description('Iter (loss=%5.3f)' % loss.item())
-
+                # iter_bar.set_description('Iter (loss=%5.3f)' % loss.item())
+                
                 # ensure that accumlated gradients are normalized
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
-
+                loss = scaler.scale(loss)
+                logger.info("STEP: {:.8f}, LOSS: {:.8f}".format(idx,loss.item()))
+                # print("Step:",step,"Loss:",loss)
                 if args.fp16:
                     optimizer.backward(loss)
                     if amp_handle:
@@ -465,25 +514,26 @@ def main():
                         for param_group in optimizer.param_groups:
                             param_group['lr'] = lr_this_step
                     optimizer.step()
-                    optimizer.zero_grad()
+                    optimizer.clear_grad()
                     global_step += 1
+                    # progress_bar.update(1)
 
             # Save a trained model
-            if (args.local_rank == -1 or torch.distributed.get_rank() == 0):
+            if (args.local_rank == -1 or paddle.device.get_device() == 0) and i_epoch % 5 == 0 :
                 logger.info(
                     "** ** * Saving fine-tuned model and optimizer ** ** * ")
                 model_to_save = model.module if hasattr(
                     model, 'module') else model  # Only save the model it-self
                 output_model_file = os.path.join(
-                    args.output_dir, "model.{0}.bin".format(i_epoch))
-                torch.save(model_to_save.state_dict(), output_model_file)
+                    args.output_dir, "model.{0}.pdparams".format(i_epoch))
+                paddle.save(model_to_save.state_dict(), output_model_file)
                 output_optim_file = os.path.join(
-                    args.output_dir, "optim.{0}.bin".format(i_epoch))
-                torch.save(optimizer.state_dict(), output_optim_file)
+                    args.output_dir, "optim.{0}.pdparams".format(i_epoch))
+                paddle.save(optimizer.state_dict(), output_optim_file)
 
                 logger.info("***** CUDA.empty_cache() *****")
-                torch.cuda.empty_cache()
+                # torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":
-    main()
+    paddle.distributed.spawn(main, nprocs=1)

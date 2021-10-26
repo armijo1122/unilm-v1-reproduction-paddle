@@ -56,8 +56,8 @@ class DistributedSampler(DistributedBatchSampler):
             drop_last=drop_last)
 
 def _get_max_epoch_model(output_dir):
-    fn_model_list = glob.glob(os.path.join(output_dir, "model.*.bin"))
-    fn_optim_list = glob.glob(os.path.join(output_dir, "optim.*.bin"))
+    fn_model_list = glob.glob(os.path.join(output_dir, "model.*.pdparams"))
+    fn_optim_list = glob.glob(os.path.join(output_dir, "optim.*.pdparams"))
     if (not fn_model_list) or (not fn_optim_list):
         return None
     both_set = set([int(Path(fn).stem.split('.')[-1]) for fn in fn_model_list]
@@ -349,7 +349,7 @@ def main():
         if recover_step:
             logger.info("***** Recover model: %d *****", recover_step)
             model_recover = paddle.load(os.path.join(
-                args.output_dir, "model.{0}.pdparams".format(recover_step)), map_location='cpu')
+                args.output_dir, "model.{0}.pdparams".format(recover_step)))
             # recover_step == number of epochs
             global_step = math.floor(
                 recover_step * t_total / args.num_train_epochs)
@@ -391,7 +391,9 @@ def main():
         {'params': [p for n, p in param_optimizer if any(
             nd in n for nd in no_decay)], 'weight_decay': 0.0}
     ]
+    print("Hello")
     if args.fp16:
+        print("FP16!!!")
         try:
             # from apex.optimizers import FP16_Optimizer
             from pytorch_pretrained_bert.optimization_fp16 import FP16_Optimizer_State
@@ -402,8 +404,8 @@ def main():
 
         optimizer = FusedAdam(optimizer_grouped_parameters,
                               lr=args.learning_rate,
-                              bias_correction=False)
-                            #   max_grad_norm=1.0)
+                              bias_correction=False,
+                              max_grad_norm=1.0)
         if args.loss_scale == 0:
             optimizer = FP16_Optimizer_State(
                 optimizer, dynamic_loss_scale=True)
@@ -417,19 +419,21 @@ def main():
         #                     learning_rate=args.learning_rate,
         #                     warmup=args.warmup_proportion,
         #                     t_total=t_total)
+        print("WEIGHT_DECAY", optimizer_grouped_parameters[0]["weight_decay"])
         optimizer = Adam(
                         parameters=optimizer_grouped_parameters[0]["params"],
                         weight_decay=optimizer_grouped_parameters[0]["weight_decay"],
-                        learning_rate=args.learning_rate
+                        learning_rate=args.learning_rate,
+                        epsilon = 1e-6
         )
     scaler = paddle.amp.GradScaler(init_loss_scaling=1024)
     if recover_step:
         logger.info("***** Recover optimizer: %d *****", recover_step)
         optim_recover = paddle.load(os.path.join(
-            args.output_dir, "optim.{0}.bin".format(recover_step)), map_location='cpu')
+            args.output_dir, "optim.{0}.pdparams".format(recover_step)))
         if hasattr(optim_recover, 'state_dict'):
             optim_recover = optim_recover.state_dict()
-        optimizer.load_state_dict(optim_recover)
+        optimizer.set_state_dict(optim_recover)
         if args.loss_scale == 0:
             logger.info("***** Recover optimizer: dynamic_loss_scale *****")
             optimizer.dynamic_loss_scale = True
@@ -462,6 +466,7 @@ def main():
             # iter_bar = tqdm(train_dataloader, desc='Iter (loss=X.XXX)',
             #                 disable=args.local_rank not in (-1, 0))
             # logger.info("11111111")
+            logger.info("LEN = {len}".format(len = len(train_dataloader)))
             for step, batch in enumerate(train_dataloader):
                 # logger.info("2222222")
                 model.train()
@@ -515,7 +520,7 @@ def main():
                     # progress_bar.update(1)
 
             # Save a trained model
-            if (args.local_rank == -1 or paddle.device.get_device() == 0):
+            if (args.local_rank == -1 or paddle.device.get_device() == 0) and i_epoch % 5 == 0 :
                 logger.info(
                     "** ** * Saving fine-tuned model and optimizer ** ** * ")
                 model_to_save = model.module if hasattr(

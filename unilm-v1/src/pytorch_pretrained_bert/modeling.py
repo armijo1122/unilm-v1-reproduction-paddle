@@ -554,8 +554,8 @@ class BertPredictionHeadTransform(nn.Module):
         log_torch.add("BertPredictionHeadTransform_hidden_states_origin", hidden_states.cpu().detach().numpy())
         log_loss.add("BertPredictionHeadTransform_hidden_states_origin", hidden_states.cpu().detach().numpy())
         hidden_states = self.dense(hidden_states)
-        print("!!!WARNING:", self.dense.weight)
-        print("ERROR:", hidden_states)
+        # print("!!!WARNING:", self.dense.weight)
+        # print("ERROR:", hidden_states)
         log_torch.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
         log_loss.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
         hidden_states = self.transform_act_fn(hidden_states)
@@ -609,14 +609,14 @@ class BertLMPredictionHead(nn.Module):
             hidden_states = hidden_states.view(
                 num_batch, num_pos, self.relax_projection, -1)[torch.arange(0, num_batch).long(), :, task_idx, :]
         if self.fp32_embedding:
-            print("!!!HIDDEN STATE shape:",hidden_states.size())
-            print("!!!BIAS shape:", self.bias)
+            # print("!!!HIDDEN STATE shape:",hidden_states.size())
+            # print("!!!BIAS shape:", self.bias)
             hidden_states = F.linear(self.type_converter(hidden_states), self.type_converter(
                 self.decoder.weight), self.type_converter(self.bias))
         else:
-            print("!!!HIDDEN STATE shape:",hidden_states.size())
-            print("!!!BIAS shape:", self.bias.size())
-            print("SHAPE AFTER DECODING:", self.decoder(hidden_states).size())
+            # print("!!!HIDDEN STATE shape:",hidden_states.size())
+            # print("!!!BIAS shape:", self.bias.size())
+            # print("SHAPE AFTER DECODING:", self.decoder(hidden_states).size())
             hidden_states = self.decoder(hidden_states) + self.bias
         return hidden_states
 
@@ -1353,10 +1353,10 @@ class BertForPreTrainingLossMask(PreTrainedBertModel):
             masked_lm_loss = self.crit_mask_lm_smoothed(
                 F.log_softmax(prediction_scores_masked.float(), dim=-1), masked_lm_labels)
         else:
-            print("!!!masked_lm_labels shape", masked_lm_labels.size())
+            # print("!!!masked_lm_labels shape", masked_lm_labels.size())
             masked_lm_loss = self.crit_mask_lm(
                 prediction_scores_masked.transpose(1, 2).float(), masked_lm_labels)
-            log_loss.add("masked_lm_loss", masked_lm_loss.cpu().detach().numpy())
+            # log_loss.add("masked_lm_loss", masked_lm_loss.cpu().detach().numpy())
         masked_lm_loss = loss_mask_and_normalize(
             masked_lm_loss.float(), masked_weights)
 
@@ -1379,8 +1379,8 @@ class BertForPreTrainingLossMask(PreTrainedBertModel):
             masked_lm_loss = masked_lm_loss + masked_lm_loss_2
 
         if pair_x is None or pair_y is None or pair_r is None or pair_pos_neg_mask is None or pair_loss_mask is None:
-            print("!!! Fundamental loss")
-            log_loss.save("loss_torch.npy")
+            # print("!!! Fundamental loss")
+            # log_loss.save("loss_torch.npy")
             return masked_lm_loss, next_sentence_loss
 
         # pair and relation
@@ -2014,7 +2014,7 @@ class BertForSequenceClassification(PreTrainedBertModel):
                 loss_fct = MSELoss()
                 loss = loss_fct(logits.view(-1), labels.view(-1))
             else:
-                print('unkown labels.dtype')
+                # print('unkown labels.dtype')
                 loss = None
             return loss
         else:

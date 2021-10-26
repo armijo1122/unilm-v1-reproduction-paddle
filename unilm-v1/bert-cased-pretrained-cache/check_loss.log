@@ -1,0 +1,5 @@
+[2021/10/17 19:35:58] root INFO: masked_lm_loss: 
+[2021/10/17 19:35:58] root INFO: 	mean diff: check passed: False, value: 1.0658681393493907e-05
+[2021/10/17 19:35:58] root INFO: next_sentence_loss: 
+[2021/10/17 19:35:58] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/17 19:35:58] root INFO: diff check failed

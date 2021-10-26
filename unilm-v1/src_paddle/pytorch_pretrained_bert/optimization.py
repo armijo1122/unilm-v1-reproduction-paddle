@@ -12,10 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from numpy.core.fromnumeric import shape
+from torch.nn import parameter
 import paddle
 from paddle.optimizer import Optimizer
 import math
-
+import numpy as np
 from collections import defaultdict
 import collections.abc as container_abcs
 # from torch._six import container_abcs
@@ -67,7 +69,7 @@ class BertAdam(Optimizer):
         max_grad_norm: Maximum norm for the gradients (-1 means no clipping). Default: 1.0
     """
 
-    def __init__(self, learning_rate=0.0, warmup=-1, parameters=None, t_total=-1, schedule='warmup_linear', b1=0.9, b2=0.999, e=1e-6, weight_decay=0.01, max_grad_norm=1.0):
+    def __init__(self, params, learning_rate=0.0, warmup=-1, parameters=None, t_total=-1, schedule='warmup_linear', b1=0.9, b2=0.999, e=1e-6, weight_decay=0.01, max_grad_norm=1.0):
         # print("!!!ERROR",lr)
         # exit(0)
         if  learning_rate < 0.0:
@@ -92,23 +94,30 @@ class BertAdam(Optimizer):
                         max_grad_norm=max_grad_norm)
         # print("!!!ERROR",parameters)
         # print("!!!ERROR",defaults)
-        super(BertAdam, self).__init__(
-            learning_rate = learning_rate,
-            parameters = parameters,
-            weight_decay = weight_decay
-        )
         # self.parameters = parameters
+        self.lr = learning_rate
         self.t_total = t_total
         self.schedule = schedule
         self.warmup = warmup
         self.b1 = b1
         self.b2 = b2
         self.e = e
+        self.param_groups = list(params)
+        self.parameters = []
+        for group in self.param_groups:
+            for p in group['params']:
+                self.parameters.append(p)
+            self.weight_decay = group["weight_decay"]
         self.max_grad_norm = max_grad_norm
+        self.state = defaultdict(dict)
+        super(BertAdam, self).__init__(
+            learning_rate = learning_rate,
+            parameters = self.parameters
+        )
 
     def get_lr(self):
         lr = []
-        for p in self.parameters:
+        for group in self.param_groups:
             state = self.state[p]
             if len(state) == 0:
                 return [0]
@@ -132,66 +141,87 @@ class BertAdam(Optimizer):
         if closure is not None:
             loss = closure()
 
-        for group in self.param_groups:
-            for p in group['params']:
-                if p.grad is None:
-                    continue
-                grad = p.grad.data
-                if grad.is_sparse:
-                    raise RuntimeError(
-                        'Adam does not support sparse gradients, please consider SparseAdam instead')
+        for p in self.parameters:
+            p_data = paddle.to_tensor(p.numpy())
+            if p.grad is None:
+                continue
+            grad = p.grad
+            # if grad.is_sparse:
+            #     raise RuntimeError(
+            #         'Adam does not support sparse gradients, please consider SparseAdam instead')
 
-                state = self.state[p]
+            state = self.state[p]
 
-                # State initialization
-                if len(state) == 0:
-                    state['step'] = 0
-                    # Exponential moving average of gradient values
-                    state['next_m'] = paddle.zeros_like(p.data)
-                    # Exponential moving average of squared gradient values
-                    state['next_v'] = paddle.zeros_like(p.data)
+            # State initialization
+            if len(state) == 0:
+                state['step'] = 0
+                # Exponential moving average of gradient values
+                state['next_m'] = paddle.zeros_like(p_data)
+                # Exponential moving average of squared gradient values
+                state['next_v'] = paddle.zeros_like(p_data)
 
-                next_m, next_v = state['next_m'], state['next_v']
-                beta1, beta2 = self.b1, self.b2
+            next_m, next_v = state['next_m'], state['next_v']
+            beta1, beta2 = self.b1, self.b2
 
-                # Add grad clipping
-                if group['max_grad_norm'] > 0:
-                    clip_grad_value_(p, group['max_grad_norm'])
+            # Add grad clipping
+            if self.max_grad_norm > 0:
+                clip_grad_value_(p, self.max_grad_norm)
 
-                # Decay the first and second moment running average coefficient
-                # In-place operations to update the averages at the same time
-                next_m.multiply(paddle.to_tensor([beta1])).add(paddle.multiplex(paddle.to_tensor([1 - beta1]), grad))
-                next_v.multiply(paddle.to_tensor([beta2])).add(paddle.to_tensor(1 - beta2).multiply(grad).multiply(grad))
-                update = next_m / (next_v.sqrt() + group['e'])
+            # Decay the first and second moment running average coefficient
+            # In-place operations to update the averages at the same time
+            next_m.multiply(paddle.to_tensor([beta1])).add(paddle.multiply(paddle.to_tensor([1 - beta1]), grad))
+            next_v.multiply(paddle.to_tensor([beta2])).add(paddle.to_tensor(1 - beta2).multiply(grad).multiply(grad))
+            update = next_m / (next_v.sqrt() + self.e)
 
-                # Just adding the square of the weights to the loss function is *not*
-                # the correct way of using L2 regularization/weight decay with Adam,
-                # since that will interact with the m and v parameters in strange ways.
-                #
-                # Instead we want to decay the weights in a manner that doesn't interact
-                # with the m/v parameters. This is equivalent to adding the square
-                # of the weights to the loss with plain (non-momentum) SGD.
-                if group['weight_decay'] > 0.0:
-                    update += group['weight_decay'] * p.data
+            # Just adding the square of the weights to the loss function is *not*
+            # the correct way of using L2 regularization/weight decay with Adam,
+            # since that will interact with the m and v parameters in strange ways.
+            #
+            # Instead we want to decay the weights in a manner that doesn't interact
+            # with the m/v parameters. This is equivalent to adding the square
+            # of the weights to the loss with plain (non-momentum) SGD.
+            if self.weight_decay > 0.0:
+                update += self.weight_decay * p_data
 
-                if group['t_total'] != -1:
-                    schedule_fct = SCHEDULES[group['schedule']]
-                    lr_scheduled = group['lr'] * schedule_fct(
-                        state['step']/group['t_total'], group['warmup'])
-                else:
-                    lr_scheduled = group['lr']
+            if self.t_total != -1:
+                schedule_fct = SCHEDULES[self.schedule]
+                lr_scheduled = self.lr * schedule_fct(
+                    state['step']/self.t_total, self.warm_up)
+            else:
+                lr_scheduled = self.lr
 
-                update_with_lr = lr_scheduled * update
-                p.data.add(-update_with_lr)
+            update_with_lr = lr_scheduled * update
+            p_data.add(-update_with_lr)
+            p = paddle.create_parameter(
+                shape = p_data.shape,
+                dtype = str(p_data.numpy().dtype),
+                default_initializer=paddle.nn.initializer.Assign(p_data)
+            )
 
-                state['step'] += 1
+            state['step'] += 1
 
-                # step_size = lr_scheduled * math.sqrt(bias_correction2) / bias_correction1
-                # No bias correction
-                # bias_correction1 = 1 - beta1 ** state['step']
-                # bias_correction2 = 1 - beta2 ** state['step']
+            # step_size = lr_scheduled * math.sqrt(bias_correction2) / bias_correction1
+            # No bias correction
+            # bias_correction1 = 1 - beta1 ** state['step']
+            # bias_correction2 = 1 - beta2 ** state['step']
 
         return loss
+
+    # def clear_grad(self):
+    #     for group in self.param_groups:
+    #         for p in group['params']:
+    #             if p.grad is not None:
+    #                 p.grad.detach()
+    #                 shape = p.grad.numpy().shape
+    #                 dtype = str(p.grad.numpy().dtype)
+    #                 clear_data = paddle.zeros(shape)
+    #                 print("dtype:", dtype)
+    #                 p.grad = paddle.create_parameter(
+    #                     shape = shape, 
+    #                     dtype = dtype, 
+    #                     default_initializer=paddle.nn.initializer.Assign(clear_data)
+    #                 )
+    
 
 
 class BertAdamFineTune(BertAdam):
@@ -233,9 +263,9 @@ class BertAdamFineTune(BertAdam):
                 if p.grad is None:
                     continue
                 grad = p.grad.data
-                if grad.is_sparse:
-                    raise RuntimeError(
-                        'Adam does not support sparse gradients, please consider SparseAdam instead')
+                # if grad.is_sparse:
+                #     raise RuntimeError(
+                #         'Adam does not support sparse gradients, please consider SparseAdam instead')
 
                 state = self.state[p]
 
