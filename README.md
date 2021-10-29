@@ -62,6 +62,11 @@ python check_forward.py # 对齐精度检查
 
 说明：这一步操作采用的脚本与前向对齐相同，只是模型输入不同，优化器对齐代码已经实现，但暂时还未与最后一步进行联合调试。
 
+反向对齐：
+
+cd bert-cased-pretrained-cache/
+
+python torch_backward.py # pytorch反向传播100轮
 
 
 
