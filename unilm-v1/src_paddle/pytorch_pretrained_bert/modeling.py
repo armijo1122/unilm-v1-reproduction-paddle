@@ -24,13 +24,14 @@ import paddle
 from paddle import nn
 from paddle.nn import CrossEntropyLoss, MSELoss
 import paddle.nn.functional as F
-# from torch_to_paddle_api.api import gather
+from torch_to_paddle_api.api import gather
 
 from .file_utils import cached_path
 from .loss import LabelSmoothingLoss
-# from reprod_log import ReprodLogger
-# log_paddle = ReprodLogger()
-# log_loss = ReprodLogger()
+from reprod_log import ReprodLogger
+log_paddle = ReprodLogger()
+
+log_loss = ReprodLogger()
 logger = logging.getLogger(__name__)
 
 PRETRAINED_MODEL_ARCHIVE_MAP = {
@@ -695,6 +696,7 @@ class PreTrainedBertModel(nn.Layer):
         """
         if isinstance(module, (nn.Linear, nn.Embedding)):
             module.weight.set_value(paddle.normal(mean=0.0, std=self.config.initializer_range, shape=module.weight.shape))
+            # module.weight.set_value(paddle.full_like(module.weight, 0.015))
         elif isinstance(module, BertLayerNorm):
             module.bias.set_value(paddle.full_like(module.bias, 0.0))
             module.weight.set_value(paddle.full_like(module.weight, 1.0))
@@ -2027,14 +2029,15 @@ class BertForSequenceClassification(PreTrainedBertModel):
         self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, num_labels, bias_attr=True)
+        
         self.apply(self.init_bert_weights)
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None, mask_qkv=None, task_idx=None):
         _, pooled_output = self.bert(
             input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False, mask_qkv=mask_qkv, task_idx=task_idx)
         pooled_output = self.dropout(pooled_output)
+        
         logits = self.classifier(pooled_output)
-
         if labels is not None:
             if labels.dtype == 'int64':
                 loss_fct = CrossEntropyLoss()

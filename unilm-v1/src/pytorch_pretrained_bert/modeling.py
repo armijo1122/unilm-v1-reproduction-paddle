@@ -552,18 +552,18 @@ class BertPredictionHeadTransform(nn.Module):
 
     def forward(self, hidden_states):
         log_torch.add("BertPredictionHeadTransform_hidden_states_origin", hidden_states.cpu().detach().numpy())
-        log_loss.add("BertPredictionHeadTransform_hidden_states_origin", hidden_states.cpu().detach().numpy())
+        # log_loss.add("BertPredictionHeadTransform_hidden_states_origin", hidden_states.cpu().detach().numpy())
         hidden_states = self.dense(hidden_states)
         # print("!!!WARNING:", self.dense.weight)
         # print("ERROR:", hidden_states)
         log_torch.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
-        log_loss.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
+        # log_loss.add("BertPredictionHeadTransform_hidden_states_dense", hidden_states.cpu().detach().numpy())
         hidden_states = self.transform_act_fn(hidden_states)
         log_torch.add("BertPredictionHeadTransform_hidden_states_act_fn", hidden_states.cpu().detach().numpy())
-        log_loss.add("BertPredictionHeadTransform_hidden_states_act_fn", hidden_states.cpu().detach().numpy())
+        # log_loss.add("BertPredictionHeadTransform_hidden_states_act_fn", hidden_states.cpu().detach().numpy())
         hidden_states = self.LayerNorm(hidden_states)
         log_torch.add("BertPredictionHeadTransform_hidden_states_Norm", hidden_states.cpu().detach().numpy())
-        log_loss.add("BertPredictionHeadTransform_hidden_states_Norm", hidden_states.cpu().detach().numpy())
+        # log_loss.add("BertPredictionHeadTransform_hidden_states_Norm", hidden_states.cpu().detach().numpy())
         return hidden_states
 
 
@@ -600,7 +600,7 @@ class BertLMPredictionHead(nn.Module):
             if self.fp32_embedding:
                 self.transform.half()
         hidden_states = self.transform(self.type_converter(hidden_states))
-        log_loss.add("BertLMPredictionHead_hidden_states", hidden_states.cpu().detach().numpy())
+        # log_loss.add("BertLMPredictionHead_hidden_states", hidden_states.cpu().detach().numpy())
         log_torch.add("BertLMPredictionHead_hidden_states", hidden_states.cpu().detach().numpy())
         if self.relax_projection > 1:
             num_batch = hidden_states.size(0)
@@ -680,6 +680,7 @@ class PreTrainedBertModel(nn.Module):
         """
         if isinstance(module, (nn.Linear, nn.Embedding)):
             module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            # module.weight.data.fill_(0.015)
         elif isinstance(module, BertLayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
@@ -1340,11 +1341,11 @@ class BertForPreTrainingLossMask(PreTrainedBertModel):
         # masked lm
         sequence_output_masked = gather_seq_out_by_pos(
             sequence_output, masked_pos)
-        log_loss.add("sequence_output_masked", sequence_output_masked.cpu().detach().numpy())
-        log_loss.add("pooled_output", pooled_output.cpu().detach().numpy())
+        # log_loss.add("sequence_output_masked", sequence_output_masked.cpu().detach().numpy())
+        # log_loss.add("pooled_output", pooled_output.cpu().detach().numpy())
         prediction_scores_masked, seq_relationship_score = self.cls(
             sequence_output_masked, pooled_output, task_idx=task_idx)
-        log_loss.add("prediction_scores_masked", prediction_scores_masked.cpu().detach().numpy())
+        # log_loss.add("prediction_scores_masked", prediction_scores_masked.cpu().detach().numpy())
         log_torch.add("sequence_output_masked", sequence_output_masked.cpu().detach().numpy())
         log_torch.add("prediction_scores_masked", prediction_scores_masked.cpu().detach().numpy())
         log_torch.add("seq_relationship_score", seq_relationship_score.cpu().detach().numpy())
@@ -2003,8 +2004,8 @@ class BertForSequenceClassification(PreTrainedBertModel):
         _, pooled_output = self.bert(
             input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False, mask_qkv=mask_qkv, task_idx=task_idx)
         pooled_output = self.dropout(pooled_output)
+        
         logits = self.classifier(pooled_output)
-
         if labels is not None:
             if labels.dtype == torch.long:
                 loss_fct = CrossEntropyLoss()

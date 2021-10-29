@@ -1,6 +1,8 @@
 import sys
 import os
-sys.path.append(os.path.dirname('/home/aistudio/unilmv1_paddle/unilm-v1/src_paddle'))
+
+from paddle.optimizer import AdamW
+sys.path.append(os.path.dirname('/lustre/S/fuqiang/unilm/unilm/unilm-v1/'))
 
 import random
 import numpy as np
@@ -27,7 +29,7 @@ from paddle.io import DistributedBatchSampler
 from paddle.optimizer import Adamax
 
 from src_paddle.pytorch_pretrained_bert.tokenization import BertTokenizer, WhitespaceTokenizer
-from src_paddle.pytorch_pretrained_bert.modeling import BertForPreTrainingLossMask
+from src_paddle.pytorch_pretrained_bert.modeling import BertForPreTrainingLossMask, BertForSequenceClassification
 # from src_paddle.pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 
 # from nn.data_parallel import DataParallelImbalance
@@ -39,7 +41,25 @@ import paddle.distributed.fleet as fleet
 logger = logging.getLogger(__name__)
 parser = argparse.ArgumentParser()
 
+def _get_max_epoch_model(output_dir):
+    fn_model_list = glob.glob(os.path.join(output_dir, "model.*.pdparams"))
+    fn_optim_list = glob.glob(os.path.join(output_dir, "optim.*.pdparams"))
+    if (not fn_model_list) or (not fn_optim_list):
+        return None
+    both_set = set([int(Path(fn).stem.split('.')[-1]) for fn in fn_model_list]
+                   ) & set([int(Path(fn).stem.split('.')[-1]) for fn in fn_optim_list])
+    if both_set:
+        return max(both_set)
+    else:
+        return None
+
 # Required parameters
+parser.add_argument(
+  "--recover_on",
+  default=True,
+  type = bool,
+  help = "Decide whether Recover from checkpoint or not."
+)
 parser.add_argument("--data_dir",
                     default=None,
                     type=str,
@@ -290,13 +310,49 @@ dev_data_loader = create_dataloader(dev, mode="dev", batchify_fn=batchify_fn, tr
 _state_dict = {} if args.from_scratch else None
 
 cls_num_labels = 2
-type_vocab_size = 6 + \
-    (1 if args.s2s_add_segment else 0) if args.new_segment_ids else 2
+# type_vocab_size = 6 + \
+#     (1 if args.s2s_add_segment else 0) if args.new_segment_ids else 2
+type_vocab_size = 2
 
 relax_projection = 4 if args.relax_projection else 0
 num_sentlvl_labels = 2 if args.has_sentence_oracle else 0
-model = BertForPreTrainingLossMask.from_pretrained(
-            args.bert_model, state_dict=_state_dict, num_labels=cls_num_labels, num_rel=0, type_vocab_size=type_vocab_size, config_path=args.config_path, task_idx=3, num_sentlvl_labels=num_sentlvl_labels, max_position_embeddings=args.max_position_embeddings, label_smoothing=args.label_smoothing, fp32_embedding=args.fp32_embedding, relax_projection=relax_projection, new_pos_ids=args.new_pos_ids, ffn_type=args.ffn_type, hidden_dropout_prob=args.hidden_dropout_prob, attention_probs_dropout_prob=args.attention_probs_dropout_prob, num_qkv=args.num_qkv, seg_emb=args.seg_emb)
+# model = BertForPreTrainingLossMask.from_pretrained(
+#             args.bert_model, state_dict=_state_dict, num_labels=cls_num_labels, num_rel=0, type_vocab_size=type_vocab_size, config_path=args.config_path, task_idx=3, num_sentlvl_labels=num_sentlvl_labels, max_position_embeddings=args.max_position_embeddings, label_smoothing=args.label_smoothing, fp32_embedding=args.fp32_embedding, relax_projection=relax_projection, new_pos_ids=args.new_pos_ids, ffn_type=args.ffn_type, hidden_dropout_prob=args.hidden_dropout_prob, attention_probs_dropout_prob=args.attention_probs_dropout_prob, num_qkv=args.num_qkv, seg_emb=args.seg_emb)
+
+
+# Recover Model
+recover_step = _get_max_epoch_model(args.output_dir)
+t_total = int(len(train_data_loader) * args.num_train_epochs /
+                  args.gradient_accumulation_steps)
+if args.recover_on:
+    if recover_step:
+        logger.info("***** Recover model: %d *****", recover_step)
+        model_recover = paddle.load(os.path.join(
+            args.output_dir, "model.{0}.pdparams".format(recover_step)))
+        # recover_step == number of epochs
+        global_step = math.floor(
+            recover_step * t_total / args.num_train_epochs)
+    elif args.model_recover_path:
+        logger.info("***** Recover model: %s *****",
+                    args.model_recover_path)
+        model_recover = paddle.load(
+            args.model_recover_path)
+        global_step = 0
+else:
+    model_recover = _state_dict
+
+
+model = BertForSequenceClassification.from_pretrained(
+    args.bert_model, state_dict=model_recover, 
+    num_labels=cls_num_labels,
+    type_vocab_size=type_vocab_size, config_path=args.config_path, 
+    task_idx=3, 
+    max_position_embeddings=args.max_position_embeddings, 
+    fp32_embedding=args.fp32_embedding, 
+    relax_projection=relax_projection, new_pos_ids=args.new_pos_ids, 
+    ffn_type=args.ffn_type, hidden_dropout_prob=args.hidden_dropout_prob, 
+    attention_probs_dropout_prob=args.attention_probs_dropout_prob, num_qkv=args.num_qkv   
+)
 
 # 设置lr_scheduler
 num_training_steps = len(train_data_loader) * args.num_train_epochs
@@ -312,13 +368,25 @@ optimizer_grouped_parameters = [
     ]
 g_clip = paddle.nn.ClipGradByGlobalNorm(1.0)
 
-optimizer = Adamax(
+optimizer = AdamW(
     learning_rate = lr_scheduler,
     parameters = optimizer_grouped_parameters,
     # weight_decay = 0.01,
     epsilon = 1e-6,
     grad_clip = g_clip
 )
+# recover optimizer
+if args.recover_on:
+    if recover_step:
+        logger.info("***** Recover optimizer: %d *****", recover_step)
+        optim_recover = paddle.load(os.path.join(
+            args.output_dir, "optim.{0}.pdparams".format(recover_step)))
+        if hasattr(optim_recover, 'state_dict'):
+            optim_recover = optim_recover.state_dict()
+        optimizer.set_state_dict(optim_recover)
+        if args.loss_scale == 0:
+            logger.info("***** Recover optimizer: dynamic_loss_scale *****")
+            optimizer.dynamic_loss_scale = True
 
 import paddle.nn.functional as F
 from utils.metrics import compute_metrics
@@ -331,26 +399,26 @@ def evaluate(model, data_loader, task_type="classification"):
     out_labels = None
     for batch in data_loader:
         input_ids, token_type_ids, labels = batch
-        loss_tuple = model(input_ids, token_type_ids)
+        logits = model(input_ids, token_type_ids)
         if task_type == "classification":
-            loss = F.cross_entropy(loss_tuple[1], labels)
+            loss = F.cross_entropy(logits, labels)
             losses.append(loss.numpy())
 
             if preds is None:
-                preds = np.argmax(loss_tuple[1].detach().numpy(), axis=1).reshape([len(loss_tuple[1]), 1])
+                preds = np.argmax(logits.detach().numpy(), axis=1).reshape([len(logits), 1])
                 out_labels = labels.detach().numpy()
             else:
-                preds = np.append(preds, np.argmax(loss_tuple[1].detach().numpy(), axis=1).reshape([len(loss_tuple[1]), 1]), axis=0)
+                preds = np.append(preds, np.argmax(logits.detach().numpy(), axis=1).reshape([len(logits), 1]), axis=0)
                 out_labels = np.append(out_labels, labels.detach().numpy(), axis=0)
         else:
-            loss = F.mse_loss(loss_tuple[1], labels)
+            loss = F.mse_loss(logits, labels)
             losses.append(loss.numpy())
 
             if preds is None:
-                preds = loss_tuple[1].detach().numpy()
+                preds = logits.detach().numpy()
                 out_labels = labels.detach().numpy()
             else:
-                preds = np.append(preds, loss_tuple[1].detach().numpy(), axis=0)
+                preds = np.append(preds, logits.detach().numpy(), axis=0)
                 out_labels = np.append(out_labels, labels.detach().numpy(), axis=0)
     
     result = compute_metrics(task_name, preds.reshape(-1), out_labels.reshape(-1))
@@ -364,7 +432,7 @@ def do_train():
     for  epoch in range(1, int(args.num_train_epochs)+1):
         for step, batch in enumerate(train_data_loader, start=1):
             input_ids, segment_ids, labels = batch
-            loss_tuple = model(input_ids, segment_ids)
+            logits = model(input_ids, segment_ids)
             # print("input_ids",input_ids)
             # print("segment_ids",segment_ids)
             # print("labels",labels)
@@ -373,9 +441,9 @@ def do_train():
            
            
             if glue_task_type[task_name] == "classification":
-                loss = F.cross_entropy(loss_tuple[1], labels)
+                loss = F.cross_entropy(logits, labels)
             else:
-                loss = F.mse_loss(loss_tuple[1], labels)
+                loss = F.mse_loss(logits, labels)
 
             if step%20 == 0:
                 print("epoch: {}/{}, step: {}/{}, loss: {} ".format(epoch, int(args.num_train_epochs), step, len(train_data_loader), loss.numpy()))
@@ -397,6 +465,9 @@ def do_train():
 
         evaluate(model, dev_data_loader, task_type=glue_task_type[task_name])
 
+
+
 # 开始模型训练
 do_train()
+# evaluate(model, dev_data_loader, task_type=glue_task_type[task_name])
 

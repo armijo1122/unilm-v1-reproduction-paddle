@@ -1,0 +1,401 @@
+[2021/10/29 00:02:15] root INFO: backward-LR0: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: True, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS0: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: True, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LR1: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: True, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS1: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 1.0728836059570312e-06
+[2021/10/29 00:02:15] root INFO: backward-LR2: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS2: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0015726089477539062
+[2021/10/29 00:02:15] root INFO: backward-LR3: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS3: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.004779219627380371
+[2021/10/29 00:02:15] root INFO: backward-LR4: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS4: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.005964040756225586
+[2021/10/29 00:02:15] root INFO: backward-LR5: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS5: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.009081244468688965
+[2021/10/29 00:02:15] root INFO: backward-LR6: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS6: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.01042163372039795
+[2021/10/29 00:02:15] root INFO: backward-LR7: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS7: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.010928511619567871
+[2021/10/29 00:02:15] root INFO: backward-LR8: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS8: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.014555096626281738
+[2021/10/29 00:02:15] root INFO: backward-LR9: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS9: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.018194377422332764
+[2021/10/29 00:02:15] root INFO: backward-LR10: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS10: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.021531224250793457
+[2021/10/29 00:02:15] root INFO: backward-LR11: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS11: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.02381688356399536
+[2021/10/29 00:02:15] root INFO: backward-LR12: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS12: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.024562835693359375
+[2021/10/29 00:02:15] root INFO: backward-LR13: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS13: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.02371835708618164
+[2021/10/29 00:02:15] root INFO: backward-LR14: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS14: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.02187490463256836
+[2021/10/29 00:02:15] root INFO: backward-LR15: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS15: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.01928246021270752
+[2021/10/29 00:02:15] root INFO: backward-LR16: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS16: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.014162898063659668
+[2021/10/29 00:02:15] root INFO: backward-LR17: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS17: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.007471680641174316
+[2021/10/29 00:02:15] root INFO: backward-LR18: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS18: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0038805007934570312
+[2021/10/29 00:02:15] root INFO: backward-LR19: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS19: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.001218557357788086
+[2021/10/29 00:02:15] root INFO: backward-LR20: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS20: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.002264261245727539
+[2021/10/29 00:02:15] root INFO: backward-LR21: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS21: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.01332324743270874
+[2021/10/29 00:02:15] root INFO: backward-LR22: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS22: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.015442132949829102
+[2021/10/29 00:02:15] root INFO: backward-LR23: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS23: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.017947077751159668
+[2021/10/29 00:02:15] root INFO: backward-LR24: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS24: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.02073490619659424
+[2021/10/29 00:02:15] root INFO: backward-LR25: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS25: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.02252638339996338
+[2021/10/29 00:02:15] root INFO: backward-LR26: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS26: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.023716866970062256
+[2021/10/29 00:02:15] root INFO: backward-LR27: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS27: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.02513974905014038
+[2021/10/29 00:02:15] root INFO: backward-LR28: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS28: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.026744604110717773
+[2021/10/29 00:02:15] root INFO: backward-LR29: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS29: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.028272390365600586
+[2021/10/29 00:02:15] root INFO: backward-LR30: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS30: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.029652118682861328
+[2021/10/29 00:02:15] root INFO: backward-LR31: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS31: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.030945301055908203
+[2021/10/29 00:02:15] root INFO: backward-LR32: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS32: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.032247960567474365
+[2021/10/29 00:02:15] root INFO: backward-LR33: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS33: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03359481692314148
+[2021/10/29 00:02:15] root INFO: backward-LR34: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS34: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03494530916213989
+[2021/10/29 00:02:15] root INFO: backward-LR35: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS35: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03623443841934204
+[2021/10/29 00:02:15] root INFO: backward-LR36: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS36: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.037409842014312744
+[2021/10/29 00:02:15] root INFO: backward-LR37: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS37: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03844183683395386
+[2021/10/29 00:02:15] root INFO: backward-LR38: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS38: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03931683301925659
+[2021/10/29 00:02:15] root INFO: backward-LR39: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS39: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.04003256559371948
+[2021/10/29 00:02:15] root INFO: backward-LR40: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS40: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.04059356451034546
+[2021/10/29 00:02:15] root INFO: backward-LR41: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS41: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.041010111570358276
+[2021/10/29 00:02:15] root INFO: backward-LR42: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS42: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.04129511117935181
+[2021/10/29 00:02:15] root INFO: backward-LR43: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS43: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.041463643312454224
+[2021/10/29 00:02:15] root INFO: backward-LR44: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS44: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.04153057932853699
+[2021/10/29 00:02:15] root INFO: backward-LR45: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS45: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.041508644819259644
+[2021/10/29 00:02:15] root INFO: backward-LR46: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS46: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.04140669107437134
+[2021/10/29 00:02:15] root INFO: backward-LR47: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS47: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.041227787733078
+[2021/10/29 00:02:15] root INFO: backward-LR48: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS48: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.04097330570220947
+[2021/10/29 00:02:15] root INFO: backward-LR49: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS49: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.04064673185348511
+[2021/10/29 00:02:15] root INFO: backward-LR50: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS50: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0402543842792511
+[2021/10/29 00:02:15] root INFO: backward-LR51: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS51: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03980296850204468
+[2021/10/29 00:02:15] root INFO: backward-LR52: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS52: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.039296627044677734
+[2021/10/29 00:02:15] root INFO: backward-LR53: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS53: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0387381911277771
+[2021/10/29 00:02:15] root INFO: backward-LR54: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS54: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03813108801841736
+[2021/10/29 00:02:15] root INFO: backward-LR55: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS55: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03747963905334473
+[2021/10/29 00:02:15] root INFO: backward-LR56: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS56: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03679013252258301
+[2021/10/29 00:02:15] root INFO: backward-LR57: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS57: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.036069631576538086
+[2021/10/29 00:02:15] root INFO: backward-LR58: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS58: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0353260338306427
+[2021/10/29 00:02:15] root INFO: backward-LR59: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS59: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03456714749336243
+[2021/10/29 00:02:15] root INFO: backward-LR60: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS60: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03380089998245239
+[2021/10/29 00:02:15] root INFO: backward-LR61: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS61: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.033033907413482666
+[2021/10/29 00:02:15] root INFO: backward-LR62: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS62: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03227159380912781
+[2021/10/29 00:02:15] root INFO: backward-LR63: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS63: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.03151649236679077
+[2021/10/29 00:02:15] root INFO: backward-LR64: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS64: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.030768752098083496
+[2021/10/29 00:02:15] root INFO: backward-LR65: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS65: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.030026733875274658
+[2021/10/29 00:02:15] root INFO: backward-LR66: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS66: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.029287278652191162
+[2021/10/29 00:02:15] root INFO: backward-LR67: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS67: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.028550028800964355
+[2021/10/29 00:02:15] root INFO: backward-LR68: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS68: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0278165340423584
+[2021/10/29 00:02:15] root INFO: backward-LR69: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS69: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.027091503143310547
+[2021/10/29 00:02:15] root INFO: backward-LR70: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS70: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.02637946605682373
+[2021/10/29 00:02:15] root INFO: backward-LR71: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS71: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.025683104991912842
+[2021/10/29 00:02:15] root INFO: backward-LR72: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS72: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.02500234544277191
+[2021/10/29 00:02:15] root INFO: backward-LR73: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS73: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.024335086345672607
+[2021/10/29 00:02:15] root INFO: backward-LR74: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS74: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.023678943514823914
+[2021/10/29 00:02:15] root INFO: backward-LR75: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS75: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.02303224802017212
+[2021/10/29 00:02:15] root INFO: backward-LR76: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS76: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.022395431995391846
+[2021/10/29 00:02:15] root INFO: backward-LR77: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS77: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.02177022397518158
+[2021/10/29 00:02:15] root INFO: backward-LR78: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS78: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.021158859133720398
+[2021/10/29 00:02:15] root INFO: backward-LR79: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS79: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.020562320947647095
+[2021/10/29 00:02:15] root INFO: backward-LR80: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS80: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.019979506731033325
+[2021/10/29 00:02:15] root INFO: backward-LR81: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS81: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.019408762454986572
+[2021/10/29 00:02:15] root INFO: backward-LR82: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS82: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.018849968910217285
+[2021/10/29 00:02:15] root INFO: backward-LR83: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS83: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.01830407977104187
+[2021/10/29 00:02:15] root INFO: backward-LR84: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS84: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.017772912979125977
+[2021/10/29 00:02:15] root INFO: backward-LR85: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS85: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.017256617546081543
+[2021/10/29 00:02:15] root INFO: backward-LR86: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS86: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.01675388216972351
+[2021/10/29 00:02:15] root INFO: backward-LR87: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS87: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.016263321042060852
+[2021/10/29 00:02:15] root INFO: backward-LR88: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS88: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.015784040093421936
+[2021/10/29 00:02:15] root INFO: backward-LR89: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS89: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.015316158533096313
+[2021/10/29 00:02:15] root INFO: backward-LR90: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS90: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.014860466122627258
+[2021/10/29 00:02:15] root INFO: backward-LR91: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS91: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.014417111873626709
+[2021/10/29 00:02:15] root INFO: backward-LR92: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS92: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.01398526132106781
+[2021/10/29 00:02:15] root INFO: backward-LR93: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS93: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.013563722372055054
+[2021/10/29 00:02:15] root INFO: backward-LR94: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS94: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.013151943683624268
+[2021/10/29 00:02:15] root INFO: backward-LR95: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS95: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.012750416994094849
+[2021/10/29 00:02:15] root INFO: backward-LR96: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS96: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.012359008193016052
+[2021/10/29 00:02:15] root INFO: backward-LR97: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS97: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.011976823210716248
+[2021/10/29 00:02:15] root INFO: backward-LR98: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS98: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.011602818965911865
+[2021/10/29 00:02:15] root INFO: backward-LR99: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.0
+[2021/10/29 00:02:15] root INFO: backward-LOSS99: 
+[2021/10/29 00:02:15] root INFO: 	mean diff: check passed: False, value: 0.011236563324928284
+[2021/10/29 00:02:15] root INFO: diff check failed
