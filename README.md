@@ -68,6 +68,12 @@ cd bert-cased-pretrained-cache/
 
 python torch_backward.py # pytorch反向传播100轮
 
+python paddle_backward.py # paddle反向传播100
+
+python check_backward.py # 对齐精度检查
+
+说明：反向对齐精度详见src_unilm-v1/bert-cased-pretrained-cache/check_backward.log
+
 
 
 
