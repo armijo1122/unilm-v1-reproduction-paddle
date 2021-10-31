@@ -16,9 +16,9 @@
 
 提取码：n0it
 
-## 3. 测试
+## 3. 对齐测试
 
-模型权重文件转换：
+### 模型权重文件转换：
 
 bash convert.sh # 先运行convert_pretrained_to_paddle.py
 
@@ -26,7 +26,7 @@ bash convert.sh # 再运行convert_torch_to_paddle.py
 
 说明：以上两步分别生成pytorch_model.pdparams和unilm1-large-cased-paddle.pdparams。原PyTorch模型和转换后的Paddle模型的参数名称列表分别保存在bert-cased-pretrained-cache文件夹下的torch.txt和paddle.txt文件中。
 
-前向传播对齐：
+### 前向传播对齐：
 
 cd bert-cased-pretrained-cache/
 
@@ -38,7 +38,7 @@ python check_forward.py # 对齐精度检查
 
 说明：由于原论文提供的权重文件数据类型为fp16，因此前向传播对齐误差大概在1e-4量级。
 
-验证集和测试集对齐：
+### 验证集和测试集对齐：
 
 cd data_align/
 
@@ -50,7 +50,7 @@ python check_test_align.py #对齐精度检查
 
 说明：由于原文构建数据集时__getitem__方法采用了choice函数，每次取的数据随机，因此对齐检查时不通过，但复现后的dataset与loader可以正常加载数据。
 
-损失函数和优化器对齐：
+### 损失函数和优化器对齐：
 
 cd bert-cased-pretrained-cache/
 
@@ -60,19 +60,20 @@ bash forwardp.sh # paddle前向传播计算损失
 
 python check_forward.py # 对齐精度检查
 
-说明：这一步操作采用的脚本与前向对齐相同，只是模型输入不同，优化器对齐代码已经实现，但暂时还未与最后一步进行联合调试。
+说明：这一步操作采用的脚本与前向对齐相同，只是模型输入不同，优化器对齐的测试详见反向对齐部分。
 
-反向对齐：
+### 反向对齐：
 
 cd bert-cased-pretrained-cache/
 
 python torch_backward.py # pytorch反向传播100轮
 
-python paddle_backward.py # paddle反向传播100
+python paddle_backward.py # paddle反向传播100轮
 
 python check_backward.py # 对齐精度检查
 
 说明：反向对齐精度详见src_unilm-v1/bert-cased-pretrained-cache/check_backward.log
+
 
 
 
