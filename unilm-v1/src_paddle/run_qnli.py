@@ -1,6 +1,8 @@
 import sys
 import os
 
+from torch.nn.modules import module
+
 from paddle.optimizer import AdamW
 sys.path.append(os.path.dirname('/lustre/S/fuqiang/unilm/unilm/unilm-v1/'))
 
@@ -37,6 +39,7 @@ from paddle import DataParallel as DataParallelImbalance
 import src_paddle.biunilm.seq2seq_loader as seq2seq_loader
 import paddle.distributed as dist
 import paddle.distributed.fleet as fleet
+
 
 logger = logging.getLogger(__name__)
 parser = argparse.ArgumentParser()
@@ -228,6 +231,25 @@ parser.add_argument('--pos_shift', action='store_true',
 
 args = parser.parse_args()
 
+
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s: - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S')
+# 使用FileHandler输出到文件
+fh = logging.FileHandler(os.path.join(args.log_dir, 'unilm_train_log.log'))
+fh.setLevel(logging.DEBUG)
+fh.setFormatter(formatter)
+
+# 使用StreamHandler输出到屏幕
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(formatter)
+
+# 添加两个Handler
+logger.addHandler(ch)
+logger.addHandler(fh)
+
+
 assert Path(args.model_recover_path).is_file(
     ), "--model_recover_path doesn't exist"
 
@@ -333,7 +355,7 @@ if args.recover_on:
         global_step = math.floor(
             recover_step * t_total / args.num_train_epochs)
     elif args.model_recover_path:
-        logger.info("***** Recover model: %s *****",
+        logger.info("***** Recover model_pretrained: %s *****",
                     args.model_recover_path)
         model_recover = paddle.load(
             args.model_recover_path)
@@ -362,18 +384,18 @@ param_optimizer = list(model.named_parameters())
 no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
 optimizer_grouped_parameters = [
         {'params': [p for n, p in param_optimizer if not any(
-            nd in n for nd in no_decay)], 'weight_decay': 0.01},
+            nd in n for nd in no_decay)], 'weight_decay': 0.001},
         {'params': [p for n, p in param_optimizer if any(
             nd in n for nd in no_decay)], 'weight_decay': 0.0}
     ]
-g_clip = paddle.nn.ClipGradByGlobalNorm(1.0)
+# g_clip = paddle.nn.ClipGradByGlobalNorm(1.0)
 
 optimizer = AdamW(
     learning_rate = lr_scheduler,
     parameters = optimizer_grouped_parameters,
     # weight_decay = 0.01,
-    epsilon = 1e-6,
-    grad_clip = g_clip
+    epsilon = 1e-6
+    # grad_clip = g_clip
 )
 # recover optimizer
 if args.recover_on:
@@ -422,15 +444,21 @@ def evaluate(model, data_loader, task_type="classification"):
                 out_labels = np.append(out_labels, labels.detach().numpy(), axis=0)
     
     result = compute_metrics(task_name, preds.reshape(-1), out_labels.reshape(-1))
-    print("evaluate result: ",result)
-
+    print("evaluate result: ", result)
+    logger.info("evaluate result: {acc}".format(acc = result['acc']))
     model.train()
+    return result['acc']
 n_gpu = 1
 
 def do_train():
     model.train()
     for  epoch in range(1, int(args.num_train_epochs)+1):
         for step, batch in enumerate(train_data_loader, start=1):
+            
+            # import pdb
+            # pdb.set_trace()
+            # para = list(model.named_parameters())[0]
+            # print("Parameters1:", para)
             input_ids, segment_ids, labels = batch
             logits = model(input_ids, segment_ids)
             # print("input_ids",input_ids)
@@ -445,13 +473,31 @@ def do_train():
             else:
                 loss = F.mse_loss(logits, labels)
 
-            if step%20 == 0:
+            if step%50 == 0:
                 print("epoch: {}/{}, step: {}/{}, loss: {} ".format(epoch, int(args.num_train_epochs), step, len(train_data_loader), loss.numpy()))
-                
+                logger.info("epoch: {}/{}, step: {}/{}, loss: {} ".format(epoch, int(args.num_train_epochs), step, len(train_data_loader), loss.numpy()))
+                print(model.state_dict()['bert.encoder.layer.0.attention.self.key.weight'])
             loss.backward()
             optimizer.step()
             lr_scheduler.step()
             optimizer.clear_grad()
+            if step%1000 == 0:
+                result = evaluate(model, dev_data_loader, task_type=glue_task_type[task_name])
+                if result >= 0.926:
+                    logger.info("** ** * Saving fine-tuned model and optimizer ** ** * ")
+                    model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
+                    output_model_file = os.path.join(args.output_dir, "model.best.pdparams")
+                    paddle.save(model_to_save.state_dict(), output_model_file)
+                    output_optim_file = os.path.join( args.output_dir, "optim.best.pdparams")
+                    paddle.save(optimizer.state_dict(), output_optim_file)
+                    return
+            # if epoch == 2 and step%2000 == 0:
+            #     logger.info("** ** * Saving fine-tuned model and optimizer ** ** * ")
+            #     model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
+            #     output_model_file = os.path.join(args.output_dir, "model.{0}.pdparams".format(epoch))
+            #     paddle.save(model_to_save.state_dict(), output_model_file)
+            #     output_optim_file = os.path.join( args.output_dir, "optim.{0}.pdparams".format(epoch))
+            #     paddle.save(optimizer.state_dict(), output_optim_file)
         
         logger.info("** ** * Saving fine-tuned model and optimizer ** ** * ")
         model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
@@ -462,12 +508,12 @@ def do_train():
 
         logger.info("***** CUDA.empty_cache() *****")
         # torch.cuda.empty_cache()
-
-        evaluate(model, dev_data_loader, task_type=glue_task_type[task_name])
-
+        result = evaluate(model, dev_data_loader, task_type=glue_task_type[task_name])
 
 
+# 评估
+evaluate(model, dev_data_loader, task_type=glue_task_type[task_name])
 # 开始模型训练
 do_train()
-# evaluate(model, dev_data_loader, task_type=glue_task_type[task_name])
+
 

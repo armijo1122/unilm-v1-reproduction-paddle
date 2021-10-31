@@ -1005,7 +1005,7 @@ class PreTrainedBertModel(nn.Layer):
         #         if child is not None:
         #             load(child, prefix + name + '.')
         # load(model, prefix='' if hasattr(model, 'bert') else 'bert.')
-        model.set_state_dict(state_dict)
+        model.set_state_dict(state_dict)    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # model.missing_keys = missing_keys
         # if len(missing_keys) > 0:
         #     logger.info("Weights of {} not initialized from pretrained model: {}".format(
