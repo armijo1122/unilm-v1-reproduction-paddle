@@ -74,6 +74,13 @@ python check_backward.py # 对齐精度检查
 
 说明：反向对齐精度详见src_unilm-v1/bert-cased-pretrained-cache/check_backward.log
 
+## 4. 训练对齐
+
+cd src_paddle/
+
+bash qnli.sh
+
+说明：训练的log文件详见
 
 
 
