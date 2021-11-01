@@ -74,7 +74,7 @@ python check_backward.py # 对齐精度检查
 
 说明：反向对齐精度详见src_unilm-v1/check_log/check_backward.log
 
-## 4. 训练对齐
+## 4. 训练
 
 首先将模型权重文件下载到bert-cased-pretrained-cache/目录下，然后执行如下命令：
 
