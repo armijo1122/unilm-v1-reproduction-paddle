@@ -95,7 +95,7 @@ bash qnli.sh # 注意将脚本中涉及的路径更换成自己的目录
 训练后的模型文件下载地址：链接：https://pan.baidu.com/s/1yMBo9AjIsjVzM4GU6IOwIg 
 提取码：b0uf
 
-如果要运行评估模式可以直接在加载模型后运行bash qnli.sh，也会给出评估分数。
+如果要运行评估模式可以直接在加载模型后运行bash qnli.sh，运行第一步将会给出评估分数。
 
 
 
