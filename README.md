@@ -60,7 +60,7 @@ bash forwardp.sh # paddle前向传播计算损失
 
 python check_forward.py # 对齐精度检查
 
-说明：这一步操作采用的脚本与前向对齐相同，只是模型输入不同，优化器对齐的测试详见反向对齐部分。
+说明：这一步操作采用的脚本与前向对齐相同，只是模型输入不同，优化器对齐的测试详见反向对齐部分，对齐精度详见。
 
 ### 反向对齐：
 
@@ -72,16 +72,30 @@ python paddle_backward.py # paddle反向传播100轮
 
 python check_backward.py # 对齐精度检查
 
-说明：反向对齐精度详见src_unilm-v1/bert-cased-pretrained-cache/check_backward.log
+说明：反向对齐精度详见src_unilm-v1/check_log/check_backward.log
 
 ## 4. 训练对齐
 
+首先将模型权重文件下载到bert-cased-pretrained-cache/目录下，然后执行如下命令：
+
+cd unilm-v1/
+
+mkdir giga_finetune_out
+
+cd giga_finetune_out/
+
+mkdir bert_log/
+
 cd src_paddle/
 
-bash qnli.sh
+bash qnli.sh # 注意将脚本中涉及的路径更换成自己的目录
 
-说明：训练的log文件详见
+说明：训练的log文件详见src_paddle/check_log/unilm_train_log.log
 
+训练后的模型文件下载地址：链接：https://pan.baidu.com/s/1yMBo9AjIsjVzM4GU6IOwIg 
+提取码：b0uf
+
+如果要运行评估模式可以直接在加载模型后运行bash qnli.sh，也会给出评估分数。
 
 
 
